@@ -65,7 +65,7 @@ def inflate_obstacles(grid, robot_radius):
                             inflated_grid[nr, nc] = 0
     return inflated_grid
 
-def plot_grid_with_inflation(grid, inflated_grid, path=None, start=None, goal=None):
+def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=None, start=None, goal=None):
     """Plots the grid with inflated cells in light gray."""
     rows, cols = grid.shape
     fig, ax = plt.subplots(figsize=(12, 10))
@@ -90,6 +90,11 @@ def plot_grid_with_inflation(grid, inflated_grid, path=None, start=None, goal=No
         path_coords = np.array(path)
         ax.plot(path_coords[:, 1], path_coords[:, 0], c="blue", label="Path", linewidth=2)
         ax.set_title(f"Path Length: {len(path)}", fontsize=14)
+
+    # Plot checkpoints
+    if checkpoints:
+        for r, c in checkpoints:
+            ax.scatter(c, r, c="orange", s=50)
     
     ax.set_xticks(np.arange(-0.5, cols, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, rows, 1), minor=True)
@@ -97,6 +102,19 @@ def plot_grid_with_inflation(grid, inflated_grid, path=None, start=None, goal=No
     ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
     ax.legend()
     plt.show()
+
+def get_checkpoints(path):
+    """Returns the checkpoints from the path."""
+    if not path:
+        return []
+    checkpoints = [path[0]]
+    for i in range(1, len(path) - 1):
+        x0, y0 = path[i - 1]
+        x1, y1 = path[i]
+        x2, y2 = path[i + 1]
+        if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
+            checkpoints.append(path[i])
+    return checkpoints
 
 # Define an 80x100 grid
 rows, cols = 80, 100
@@ -119,8 +137,7 @@ inflated_grid = inflate_obstacles(grid, robot_radius)
 
 # Run A* algorithm on the inflated grid
 path = a_star(inflated_grid, start, goal)
+checkpoints = get_checkpoints(path)
 
 # Visualize the result
-plot_grid_with_inflation(grid, inflated_grid, path=path, start=start, goal=goal)
-
-
+plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)
