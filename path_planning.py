@@ -39,7 +39,7 @@ def a_star(grid, start, goal):
             neighbor = (current[0] + dr, current[1] + dc)
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols and grid[neighbor[0]][neighbor[1]] == 1:
                 # Adjust cost for diagonal movement
-                move_cost = 1.1 if dr != 0 and dc != 0 else 1 # if diagonal movement, slightly discourage it as it's less efficient
+                move_cost = 1.05 if dr != 0 and dc != 0 else 1 # if diagonal movement, slightly discourage it as it's less efficient
                 tentative_g = g_score[current] + move_cost
                 if neighbor not in g_score or tentative_g < g_score[neighbor]: # If the neighbor is not visited yet or we found a cheaper path
                     came_from[neighbor] = current
@@ -63,6 +63,16 @@ def inflate_obstacles(grid, robot_radius):
                         # Ensure within bounds
                         if 0 <= nr < rows and 0 <= nc < cols:
                             inflated_grid[nr, nc] = 0
+    return inflated_grid
+
+def inflate_borders(grid, robot_width):
+    """Inflates the borders of the grid to account for the robot's width."""
+    rows, cols = grid.shape
+    inflated_grid = grid.copy()
+    for r in range(rows):
+        for c in range(cols):
+            if r < robot_width or r >= rows - robot_width or c < robot_width or c >= cols - robot_width:
+                inflated_grid[r, c] = 0
     return inflated_grid
 
 def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=None, start=None, goal=None):
@@ -125,8 +135,8 @@ grid[20:60, 30] = 0
 grid[40, 50:90] = 0
 
 # Define start and goal points
-start = (0, 0)
-goal = (79, 99)
+start = (6, 6)
+goal = (73, 93)
 
 # Define robot size
 robot_width = 12 # The robot has a width of 11cm
@@ -134,6 +144,7 @@ robot_radius = robot_width // 2
 
 # Inflate the obstacles
 inflated_grid = inflate_obstacles(grid, robot_radius)
+inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
 
 # Run A* algorithm on the inflated grid
 path = a_star(inflated_grid, start, goal)
