@@ -1,5 +1,7 @@
 import yaml
 import os
+import cv2
+import numpy as np
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 YAML_PATH = dir_path+"/values.yml"
@@ -42,3 +44,30 @@ def read_yaml():
             return yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(exc)
+
+def perspective_transform(img: np.ndarray, corners: np.ndarray, width, height) -> np.ndarray:
+    """
+    Rectifies quadrat formed by four corner points into an image of width x height.
+    
+    Args:
+        img (np.ndarray): The original image
+        corners (np.ndarray): The four corner points in img
+        width: width of the new image
+        height: height of the new image
+    Returns:
+        np.ndarray: The transformed image
+    """
+    destination_points = np.array([
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1]
+    ], dtype="float32")
+
+    # Compute the perspective transformation matrix
+    matrix = cv2.getPerspectiveTransform(corners, destination_points)
+
+    # Perform the perspective warp
+    warped = cv2.warpPerspective(img, matrix, (width, height))
+
+    return warped

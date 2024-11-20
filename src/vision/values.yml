@@ -1,6 +1,6 @@
-blue: 11
-canny1: 255
-canny2: 255
-green: 61
-kernel_size: 0
-red: 99
+blue: 49
+canny1: 126
+canny2: 98
+green: 102
+kernel_size: 2
+red: 0

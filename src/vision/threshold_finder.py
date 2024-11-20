@@ -4,7 +4,7 @@ import numpy as np
 from camera import Camera
 import helpers
 CAMERA = True
-IMG_PATH = "test1.jpg"
+IMG_PATH = "test_map.jpg"
 
 def init_setting():
     thresholds = helpers.read_yaml()
@@ -54,8 +54,8 @@ def preprocess(img):
     # x = cv2.cvtColor(x, cv2.COLOR_BGR2HSV)
 
     # apply rgb thresholds
-    # x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
-    x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
+    x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
+    # x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
 
     thresholded = x.copy()
 
@@ -68,26 +68,43 @@ def preprocess(img):
     # # # # # # remove small objects
     # # x = cv2.erode(x, np.ones((25,25), np.uint8), iterations =1)
     # # x = cv2.dilate(x, np.ones((25,25), np.uint8), iterations=1)
+    # x = cv2.GaussianBlur(x, (5, 5), 0)
+
 
     binary = x.copy()
 
     x = cv2.Canny(x, canny_threshold1, canny_threshold2, apertureSize=3)
 
+    if kernel_size > 0:
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        x = cv2.morphologyEx(x, cv2.MORPH_CLOSE, kernel, iterations=2)
     canny = x.copy()
     
     # # find contours
     contours, _ = cv2.findContours(x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # # filter controus where area < 500
+    # filter controus where area < 500
     contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
     
     # print(f"number of contours: {len(contours)}\r")
     # print area of contours
-    for cnt in contours:
+    contours_poly = [None]*len(contours)
+    boundRect = [None]*len(contours)
+    centers = [None]*len(contours)
+    radius = [None]*len(contours)
+    for i, cnt in enumerate(contours):
+        contours_poly[i] = cv2.approxPolyDP(cnt, 3, True)
+        boundRect[i] = cv2.boundingRect(contours_poly[i])
+        centers[i], radius[i] = cv2.minEnclosingCircle(contours_poly[i])
+        cv2.rectangle(orig, (int(boundRect[i][0]), int(boundRect[i][1])), \
+          (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), (100,100,100), 2)
+
+    # for cnt in contours:
         # print(cv2.contourArea(cnt))
         cv2.putText(orig, str(int(cv2.contourArea(cnt))), cnt[0][0], 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0))
 
+        # x = cv2.morphologyEx(x, cv2.MORPH_OPEN, kernel, iterations=2)
     # # convex hull
     # hull = [cv2.convexHull(c) for c in contours]
 
