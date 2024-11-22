@@ -58,13 +58,29 @@ def preprocess(img, aruco_dict, parameters):
     cv2.imshow('Detected Markers', img)
     #     cv2.waitKey(0)
     #     cv2.destroyAllWindows()
-    
+
+def display_corners(img, corners):
+
+    cv2.line(img, corners[0], corners[1], (0,0,255), 4)
+    cv2.line(img, corners[1], corners[2], (0,0,255), 4)
+    cv2.line(img, corners[2], corners[3], (0,0,255), 4)
+    cv2.line(img, corners[3], corners[0], (0,0,255), 4)
+    cv2.imshow('Detected Markers', img)
 
 
 if __name__ == "__main__":
     # init_setting()
     if CAMERA:
         cam = Camera(1)
+        # while None in cam._corners:
+        #     img = cam.get_current_frame()
+        #     cam._find_corners()
+        #     # print(f"current corners: {cam._corners}")
+        #     cv2.imshow("corners", img)
+
+        #     if cv2.waitKey(1) == ord('q'):
+        #         break
+        # cam.initialize_map()
     else:
         img = cv2.imread(IMG_PATH)
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
@@ -72,7 +88,9 @@ if __name__ == "__main__":
     while True:
         if CAMERA:
             img = cam.get_current_frame()
+            # cam._find_corners()
         preprocess(img, aruco_dict, parameters)
+        # display_corners(img, cam._corners)
 
         # wait for a key being pressed
         # check if 'q' is pressed --> quit

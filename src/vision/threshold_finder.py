@@ -45,7 +45,7 @@ def preprocess(img):
 
     orig = x.copy()
     if CAMERA:
-        cv2.imwrite("test1.jpg", orig)
+        cv2.imwrite("testair.jpg", orig)
 
     # # x = x[:,:,0]
     
@@ -54,7 +54,8 @@ def preprocess(img):
     # x = cv2.cvtColor(x, cv2.COLOR_BGR2HSV)
 
     # apply rgb thresholds
-    x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
+    # x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
+    x = cv2.inRange(x, (0, 0, red), (blue, green, 255))
     # x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
 
     thresholded = x.copy()
@@ -142,9 +143,10 @@ if __name__ == "__main__":
 
         # wait for a key being pressed
         # check if 'q' is pressed --> quit
+        # cv2.waitKey()
         if cv2.waitKey(1) == ord('q'):
             break
-    save_thresholds()
+    # save_thresholds()
 
 
 

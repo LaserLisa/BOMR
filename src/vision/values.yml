@@ -1,6 +1,6 @@
-blue: 49
-canny1: 126
+blue: 75
+canny1: 94
 canny2: 98
-green: 102
-kernel_size: 2
-red: 0
+green: 71
+kernel_size: 4
+red: 48

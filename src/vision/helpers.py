@@ -57,11 +57,12 @@ def perspective_transform(img: np.ndarray, corners: np.ndarray, width, height) -
     Returns:
         np.ndarray: The transformed image
     """
+    corners = np.array(corners, dtype="float32")
     destination_points = np.array([
+    [0, height - 1],
     [0, 0],
     [width - 1, 0],
-    [0, height - 1],
-    [width - 1, height - 1]
+    [width - 1, height - 1],
     ], dtype="float32")
 
     # Compute the perspective transformation matrix
@@ -71,3 +72,18 @@ def perspective_transform(img: np.ndarray, corners: np.ndarray, width, height) -
     warped = cv2.warpPerspective(img, matrix, (width, height))
 
     return warped
+
+
+def get_corner(corners: np.ndarray) -> list:
+    """
+    Returns the first corner of the corners fround from an aruco detector
+
+    Args:
+        corners (np.ndarray): The 4 corners of an aruco markers returned by an aruco
+                              detector
+    
+    Returns:
+        list: The first corner of the aruco markers in format [x1,y1]
+    """
+    # Arcuo corners are of the format array([[[x1,y1],[x2,y2],[x3,y3],[x4,y4]]])
+    return corners[0][0].astype(int).tolist()
