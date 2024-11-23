@@ -1,6 +1,15 @@
-blue: 75
-canny1: 94
-canny2: 98
-green: 71
-kernel_size: 4
-red: 48
+goal:
+  area: 500
+  blue: 175
+  green: 97
+  kernel_size: 4
+  red: 146
+map_size:
+- 350
+- 240
+obstacles:
+  area: 1000
+  blue: 75
+  green: 71
+  kernel_size: 4
+  red: 64
