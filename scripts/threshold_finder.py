@@ -5,42 +5,36 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.vision.camera import Camera
-from src.vision.helpers import dump_yaml, read_yaml
+from src.vision.helpers import dump_yaml, read_yaml, Hyperparameters, Thresholds, object_to_dict
 CAMERA = True
+OBSTACLES = False
 IMG_PATH = "test_map.jpg"
 
-def init_setting():
-    thresholds = read_yaml()
+def init_setting(param: Thresholds):
     cv2.namedWindow("Settings")
-    cv2.createTrackbar("red_channel_threshold", "Settings", thresholds["red"], 255, 
+    cv2.createTrackbar("red_channel_threshold", "Settings", param.red, 255, 
                        lambda x: None)
-    cv2.createTrackbar('green_channel_threshold', 'Settings', thresholds["green"], 255, 
+    cv2.createTrackbar('green_channel_threshold', 'Settings', param.green, 255, 
                        lambda x: None)
-    cv2.createTrackbar("blue_channel_threshold", "Settings", thresholds["blue"], 255, 
+    cv2.createTrackbar("blue_channel_threshold", "Settings", param.blue, 255, 
                        lambda x: None)
-    cv2.createTrackbar('kernel_size', 'Settings', thresholds["kernel_size"], 40, 
+    cv2.createTrackbar('kernel_size', 'Settings', param.kernel_size, 40, 
                        lambda x: None)
-    cv2.createTrackbar('canny_threshold1', 'Settings', thresholds["canny1"], 255, 
+    cv2.createTrackbar('area', 'Settings', param.area, 4000, 
                        lambda x: None)
-    cv2.createTrackbar('canny_threshold2', 'Settings', thresholds["canny2"], 255, 
-                       lambda x: None)
+    # cv2.createTrackbar('canny_threshold2', 'Settings', thresholds["canny2"], 255, 
+    #                    lambda x: None)
 
-def save_thresholds():
-    thresholds = {"red": cv2.getTrackbarPos('red_channel_threshold', 'Settings'),
-                  "green": cv2.getTrackbarPos('green_channel_threshold', 'Settings'),
-                  "blue": cv2.getTrackbarPos('blue_channel_threshold', 'Settings'),
-                  "kernel_size": cv2.getTrackbarPos('kernel_size', 'Settings'),
-                  "canny1": cv2.getTrackbarPos('canny_threshold1', 'Settings'),
-                  "canny2": cv2.getTrackbarPos('canny_threshold2', 'Settings')}
-    dump_yaml(thresholds)
+def save_thresholds(hyperparams: Hyperparameters):
+    dump_yaml(object_to_dict(hyperparams))
 
-def preprocess(img, obstacles = True):
-    red = cv2.getTrackbarPos('red_channel_threshold', 'Settings')
-    green = cv2.getTrackbarPos('green_channel_threshold', 'Settings')
-    blue = cv2.getTrackbarPos('blue_channel_threshold', 'Settings')
-    kernel_size = cv2.getTrackbarPos('kernel_size', 'Settings')
-    canny_threshold1 = cv2.getTrackbarPos('canny_threshold1', 'Settings')
-    canny_threshold2 = cv2.getTrackbarPos('canny_threshold2', 'Settings')
+def preprocess(img, params: Thresholds, obstacles: bool = True) -> Thresholds:
+    params.red = cv2.getTrackbarPos('red_channel_threshold', 'Settings')
+    params.green = cv2.getTrackbarPos('green_channel_threshold', 'Settings')
+    params.blue = cv2.getTrackbarPos('blue_channel_threshold', 'Settings')
+    params.kernel_size = cv2.getTrackbarPos('kernel_size', 'Settings')
+    params.area = cv2.getTrackbarPos('area', 'Settings')
+    # canny_threshold2 = cv2.getTrackbarPos('canny_threshold2', 'Settings')
     
     x = img
 
@@ -50,8 +44,10 @@ def preprocess(img, obstacles = True):
 
 
     # apply rgb thresholds
-    # x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
-    x = cv2.inRange(x, (0, 0, red), (blue, green, 255))
+    if obstacles:
+        x = cv2.inRange(x, (0, 0, 0), (params.blue, params.green, params.red))
+    else:
+        x = cv2.inRange(x, (0, 0, params.red), (params.blue, params.green, 255))
 
     thresholded = x.copy()
 
@@ -69,10 +65,10 @@ def preprocess(img, obstacles = True):
 
     binary = x.copy()
 
-    x = cv2.Canny(x, canny_threshold1, canny_threshold2, apertureSize=3)
+    x = cv2.Canny(x, 90, 90, apertureSize=3)
 
-    if kernel_size > 0:
-        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    if params.kernel_size > 0:
+        kernel = np.ones((params.kernel_size, params.kernel_size), np.uint8)
         x = cv2.morphologyEx(x, cv2.MORPH_CLOSE, kernel, iterations=2)
     canny = x.copy()
     
@@ -80,7 +76,7 @@ def preprocess(img, obstacles = True):
     contours, _ = cv2.findContours(x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     # filter controus where area < 500
-    contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
+    contours = [cnt for cnt in contours if cv2.contourArea(cnt) > params.area]
     
     # print(f"number of contours: {len(contours)}\r")
     # print area of contours
@@ -112,10 +108,15 @@ def preprocess(img, obstacles = True):
     # img_stack = np.hstack([x, binary, thresholded])
     cv2.imshow('binary, canny, orig, thresholded', img_stack)
     # cv2.imshow('canny, binary, thresholded', img_stack)
-
+    return params
 
 if __name__ == "__main__":
-    init_setting()
+    parameters = Hyperparameters(read_yaml())
+    if OBSTACLES:
+        thresh = parameters.obstacles
+    else:
+        thresh = parameters.goal
+    init_setting(thresh)
     if CAMERA:
         cam = Camera(1)
     else:
@@ -123,14 +124,16 @@ if __name__ == "__main__":
     while True:
         if CAMERA:
             img = cam.read()
-        preprocess(img)
-
+        if OBSTACLES:
+            parameters.obstacles = preprocess(img, thresh, obstacles=OBSTACLES)
+        else:
+            parameters.goal = preprocess(img, thresh, obstacles=OBSTACLES)
         # wait for a key being pressed
         # check if 'q' is pressed --> quit
         # cv2.waitKey()
         if cv2.waitKey(1) == ord('q'):
             break
-    save_thresholds()
+    save_thresholds(parameters)
 
 
 

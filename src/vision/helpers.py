@@ -6,32 +6,51 @@ import numpy as np
 dir_path = os.path.dirname(os.path.realpath(__file__))
 YAML_PATH = dir_path+"/values.yml"
 
-def pixel2cell(x: int, y: int) -> tuple[int, int]:
-    """
-    Converts from the camera pixel space into the map space
+class Thresholds:
+    """Class used to store the parameters for the image segmentation
     
-    Args:
-        x (int): the x coordinate of the camera pixel
-        y (int): the y coordinate of the camera pixel
-        
-    Returns:
-        tuple(r,c): corresponding row (r) and column (c) in the map space
+    Attributes:
+        blue: Blue threshold
+        green: Green threshold
+        red: Red threshold
+        kernel_size: Kernel size for closing
+        area: Area size to filter the contours
     """
-    ...
-    
-def cell2pixel(r: int, c: int)-> tuple[int, int]:
-    """
-    Converts from the map space into the camer pixel space
-    
-    Args:
-        r (int): the x coordinate of the camera pixel
-        c (int): the y coordinate of the camera pixel
-        
-    Returns:
-        tuple(x,y): corresponding x and y coodinate in the pixel space
-    """
-    ...
+    def __init__(self, dict: dict):
+        self.blue = dict["blue"]
+        self.green = dict["green"]
+        self.red = dict["red"]
+        self.kernel_size = dict["kernel_size"]
+        self.area = dict["area"]
 
+
+class Hyperparameters:
+    """Class used to store the hyperparameters for the vision
+    
+    Attributes:
+        map_size: [width, height] of extracted map
+        obstacles (Thresholds): parameters for obstacle extraction
+        goal (Thresholds): parameters for goal extraction
+    """
+    def __init__(self, dict):
+        self.map_size = dict["map_size"]
+        self.obstacles = Thresholds(dict["obstacles"])
+        self.goal = Thresholds(dict["goal"])
+
+
+# Chat gpt
+def object_to_dict(obj):
+    if isinstance(obj, Thresholds):
+        return obj.__dict__  # Convert Thresholds object to dict
+    elif isinstance(obj, Hyperparameters):
+        return {
+            "map_size": obj.map_size,
+            "obstacles": object_to_dict(obj.obstacles),
+            "goal": object_to_dict(obj.goal)
+        }
+    else:
+        return obj 
+    
 
 def dump_yaml(data):
     with open(YAML_PATH, 'w') as outfile:

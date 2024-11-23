@@ -46,7 +46,8 @@ def preprocess(img, aruco_dict, parameters):
         cv2.aruco.drawDetectedMarkers(img, corners, ids)
 
         for i, id in enumerate(ids):
-            global_corners[id[0]-1] = get_corner(corners[i])
+            if id >= 1 and id <= 4: 
+                global_corners[id[0]-1] = get_corner(corners[i])
 
     if None not in global_corners:
         # draw line from corners to corners
@@ -91,7 +92,7 @@ if __name__ == "__main__":
     parameters = cv2.aruco.DetectorParameters()
     while True:
         if CAMERA:
-            img = cam.get_current_frame()
+            img = cam.read()
             # cam._find_corners()
         preprocess(img, aruco_dict, parameters)
         # display_corners(img, cam._corners)

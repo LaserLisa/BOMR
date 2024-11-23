@@ -21,7 +21,7 @@ while True:
     # Press 'q' to exit the loop
     if cv2.waitKey(1) == ord('q'):
         break
-
+print(cam.get_map())
 # Release the capture and writer objects
 cam.release()
 cv2.destroyAllWindows()
