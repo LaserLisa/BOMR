@@ -1,13 +1,16 @@
 import cv2
 import os
 import numpy as np
-from camera import Camera
-import helpers
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.vision.camera import Camera
+from src.vision.helpers import dump_yaml, read_yaml
 CAMERA = True
 IMG_PATH = "test_map.jpg"
 
 def init_setting():
-    thresholds = helpers.read_yaml()
+    thresholds = read_yaml()
     cv2.namedWindow("Settings")
     cv2.createTrackbar("red_channel_threshold", "Settings", thresholds["red"], 255, 
                        lambda x: None)
@@ -29,9 +32,9 @@ def save_thresholds():
                   "kernel_size": cv2.getTrackbarPos('kernel_size', 'Settings'),
                   "canny1": cv2.getTrackbarPos('canny_threshold1', 'Settings'),
                   "canny2": cv2.getTrackbarPos('canny_threshold2', 'Settings')}
-    helpers.dump_yaml(thresholds)
+    dump_yaml(thresholds)
 
-def preprocess(img):
+def preprocess(img, obstacles = True):
     red = cv2.getTrackbarPos('red_channel_threshold', 'Settings')
     green = cv2.getTrackbarPos('green_channel_threshold', 'Settings')
     blue = cv2.getTrackbarPos('blue_channel_threshold', 'Settings')
@@ -40,23 +43,15 @@ def preprocess(img):
     canny_threshold2 = cv2.getTrackbarPos('canny_threshold2', 'Settings')
     
     x = img
-    # scaling_factor = 0.25
-    # x = cv2.resize(x, (0, 0), fx=scaling_factor, fy=scaling_factor)
 
     orig = x.copy()
     if CAMERA:
         cv2.imwrite("testair.jpg", orig)
 
-    # # x = x[:,:,0]
-    
-    # # covnert image to lab
-    # x = cv2.cvtColor(x, cv2.COLOR_BGR2LAB)
-    # x = cv2.cvtColor(x, cv2.COLOR_BGR2HSV)
 
     # apply rgb thresholds
     # x = cv2.inRange(x, (blue, green, red), (255, 255, 255))
     x = cv2.inRange(x, (0, 0, red), (blue, green, 255))
-    # x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
 
     thresholded = x.copy()
 
@@ -94,20 +89,14 @@ def preprocess(img):
     centers = [None]*len(contours)
     radius = [None]*len(contours)
     for i, cnt in enumerate(contours):
-        contours_poly[i] = cv2.approxPolyDP(cnt, 3, True)
-        boundRect[i] = cv2.boundingRect(contours_poly[i])
-        centers[i], radius[i] = cv2.minEnclosingCircle(contours_poly[i])
-        cv2.rectangle(orig, (int(boundRect[i][0]), int(boundRect[i][1])), \
-          (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), (100,100,100), 2)
+        # contours_poly[i] = cv2.approxPolyDP(cnt, 3, True)
+        # boundRect[i] = cv2.boundingRect(contours_poly[i])
+        # centers[i], radius[i] = cv2.minEnclosingCircle(contours_poly[i])
+        # cv2.rectangle(orig, (int(boundRect[i][0]), int(boundRect[i][1])), \
+        #   (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), (100,100,100), 2)
 
-    # for cnt in contours:
-        # print(cv2.contourArea(cnt))
         cv2.putText(orig, str(int(cv2.contourArea(cnt))), cnt[0][0], 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0))
-
-        # x = cv2.morphologyEx(x, cv2.MORPH_OPEN, kernel, iterations=2)
-    # # convex hull
-    # hull = [cv2.convexHull(c) for c in contours]
 
     # draw contours
     orig = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
@@ -118,12 +107,7 @@ def preprocess(img):
     canny = cv2.cvtColor(canny, cv2.COLOR_GRAY2BGR)
     thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2BGR)
     orig = cv2.cvtColor(orig, cv2.COLOR_RGB2BGR)
-    
-    # resize images
-    # binary = cv2.resize(binary, (0, 0), fx=0.25, fy=0.25)
-    # canny = cv2.resize(canny, (0, 0), fx=0.25, fy=0.25)
-    # orig = cv2.resize(orig, (0, 0), fx=0.25, fy=0.25)
-    # thresholded = cv2.resize(thresholded, (0, 0), fx=0.25, fy=0.25)
+
     img_stack = np.hstack([np.vstack([binary, canny]), np.vstack([orig, thresholded])])
     # img_stack = np.hstack([x, binary, thresholded])
     cv2.imshow('binary, canny, orig, thresholded', img_stack)
@@ -138,7 +122,7 @@ if __name__ == "__main__":
         img = cv2.imread(IMG_PATH)
     while True:
         if CAMERA:
-            img = cam.get_current_frame()
+            img = cam.read()
         preprocess(img)
 
         # wait for a key being pressed
@@ -146,7 +130,7 @@ if __name__ == "__main__":
         # cv2.waitKey()
         if cv2.waitKey(1) == ord('q'):
             break
-    # save_thresholds()
+    save_thresholds()
 
 
 

@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
-from helpers import get_corner, perspective_transform, read_yaml
+from .helpers import get_corner, perspective_transform, read_yaml
+from .measurements import Position
 
 class Camera(cv2.VideoCapture):
     def __init__(self, camera=0):
         """
-        Instantiates a camers
+        Instantiates a camera
         
         Args:
             camera: opencv identifier of the camera
@@ -15,10 +16,15 @@ class Camera(cv2.VideoCapture):
         self._map = None
         self._init_map = False
         self._corners = [None, None, None, None]
+        self._goal_position = None
         self._aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
         self._aruco_detector = cv2.aruco.ArucoDetector(self._aruco_dict, 
                                                        cv2.aruco.DetectorParameters())
         self._thresholds = read_yaml()
+
+    def read(self) -> cv2.typing.MatLike:
+        self._ret, self._frame = super().read()
+        return self._frame
         
     def get_current_frame(self)->np.ndarray:
         """
@@ -29,7 +35,6 @@ class Camera(cv2.VideoCapture):
         Returns:
             np.ndarray: current frame
             """
-        self._ret, self._frame = self.read()
         return self._frame
     
     def initialize_map(self, show=False):
@@ -37,13 +42,33 @@ class Camera(cv2.VideoCapture):
         Initializes the map by extracting the obstacles from
         """
         while None in self._corners:
-            self.get_current_frame()
+            self.read()
             self._find_corners(show)
         print("corners found")
-        # TODO: Find way to initalize and display map at same time
-        # TODO: extract map containing obstacles: rectify map, map pixels to map size
-        # and extract obstacles 
+        self._extract_obstacles()
         self._init_map = True
+
+    def update(self, show_all: bool = False):
+        """Aquire new frame, find corners, extract obstacles, update goal and robot
+        position.
+        """
+        self._ret, self._frame = self.read()
+        self._find_corners()
+        self._extract_obstacles(show_warped=show_all)
+        self._extratct_goal(show_warped=show_all)
+
+    def display_map(self, pose_estimation: np.ndarray|list = []):
+        """Displays the map with obstacles, goal position, robot position from vision
+        and estimated robot position from the Kalman filter.
+        """
+        assert self._init_map, "Map not initalized, call cam.initalize_map() first."
+        map = self._map.copy()
+        cv2.circle(map, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
+        if pose_estimation:
+            cv2.circle(map, self._goal_position, 5, (0, 0, 255), cv2.FILLED)
+        cv2.imshow('map', map)
+
+
 
     def get_map(self)->np.ndarray:
         """
@@ -52,7 +77,7 @@ class Camera(cv2.VideoCapture):
         The maps contains '1' if there is an obstacle and '0' else.
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
-        return self._map
+        return cv2.cvtColor(self._map, cv2.COLOR_BGR2GRAY)
     
     def get_robot_pose(self)->tuple:
         """
@@ -64,10 +89,9 @@ class Camera(cv2.VideoCapture):
                                     position and the angle of rotation.
         """
         ...
-        # find aruco marker with id 42
+        # find aruco marker with id 42 on warped image
         # get central position
         # get angle to horizontal
-        # transform central position to map frame
 
     def _find_corners(self, show=False):
         """
@@ -79,10 +103,10 @@ class Camera(cv2.VideoCapture):
 
         corners, ids, rejected = self._aruco_detector.detectMarkers(gray)
         if ids is not None:
-            # update the corner position
             # the 4 corner of our map have ids 1,2,3,4
             for i, id in enumerate(ids):
-                self._corners[id[0]-1] = get_corner(corners[i])
+                if id >= 1 or id <= 4:  # only consider corner markers
+                    self._corners[id[0]-1] = get_corner(corners[i])
             if show:
                 cv2.aruco.drawDetectedMarkers(img, corners, ids)
         
@@ -97,7 +121,6 @@ class Camera(cv2.VideoCapture):
         Thresholds the current frame to see the black obstacles.
         """
         warped = perspective_transform(self._frame, self._corners, 350, 240)
-        # warped = self._frame.copy()
         thresholded = cv2.inRange(warped, (0, 0, 0), 
                                   (self._thresholds["blue"], self._thresholds["green"],
                                     self._thresholds["red"]))
@@ -109,7 +132,7 @@ class Camera(cv2.VideoCapture):
 
         contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-        # filter controus where area < 500
+        # filter controus where area < 1000
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
 
         map = np.zeros_like(warped, dtype=np.uint8)
@@ -118,6 +141,31 @@ class Camera(cv2.VideoCapture):
         if show_warped:
             cv2.drawContours(warped, contours, -1, (0, 0, 255), 1)
             cv2.imshow('warped', warped)
-            # cv2.imshow("thresholded", thresholded)
-        cv2.imshow('map', cv2.cvtColor(map, cv2.COLOR_BGR2GRAY))
+        self._map = map
 
+
+    def _extratct_goal(self, show_warped: bool = False):
+        warped = perspective_transform(self._frame, self._corners, 350, 240)
+        thresholded = cv2.inRange(warped, (0, 0, 161), 
+                                    (96, 126,255))
+        
+        canny = cv2.Canny(thresholded, 94, 98, apertureSize=3)
+        kernel = np.ones((self._thresholds["kernel_size"], 
+                            self._thresholds["kernel_size"]), np.uint8)
+        morph = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+        contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # filter controus where area < 500
+        contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
+        if contours:
+            M = cv2.moments(contours[0])
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            self._goal_position = [cx, cy]
+        
+        if show_warped:
+            cv2.drawContours(warped, contours, -1, (0, 0, 0), 2)
+            cv2.circle(warped, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
+            cv2.imshow('goal', warped)
+        

@@ -1,8 +1,12 @@
 import cv2
 import os
 import numpy as np
-from camera import Camera
-import helpers
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.vision.camera import Camera
+from src.vision.helpers import dump_yaml
 CAMERA = True
 IMG_PATH = "test1.jpg"
 global_corners = [None,None,None,None]
@@ -24,7 +28,7 @@ def save_thresholds():
                   "kernel_size": cv2.getTrackbarPos('kernel_size', 'Settings'),
                   "canny1": cv2.getTrackbarPos('canny_threshold1', 'Settings'),
                   "canny2": cv2.getTrackbarPos('canny_threshold2', 'Settings')}
-    helpers.dump_yaml(thresholds)
+    dump_yaml(thresholds)
 
 
 def preprocess(img, aruco_dict, parameters):
