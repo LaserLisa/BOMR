@@ -60,9 +60,9 @@ class Camera(cv2.VideoCapture):
             show_all (bool): If True shows all intermediate windows. Default: False
         """
         self._frame = self.read()
-        self._find_corners()
-        self._extract_obstacles(show_warped=show_all)
-        self._extract_goal(show_warped=show_all)
+        # self._find_corners()
+        # self._extract_obstacles(show_warped=show_all)
+        # self._extract_goal(show_warped=show_all)
         self._extract_robot_pose(show=True)
 
     def display_map(self, pose_estimation: np.ndarray|list = []):
@@ -76,7 +76,14 @@ class Camera(cv2.VideoCapture):
         if pose_estimation:
             cv2.circle(map, (pose_estimation/3).astype(int), 5, (0, 0, 255), cv2.FILLED)
         if self._robot_position is not None:
+            # (x0, y0) = self._robot_position.astype(int)
+            # (x1, y1) = (self._robot_position.astype(int)+[5,0])
+            # a = self._robot_orientation
+            # x2 = ((x1 - x0) * np.cos(a)) - ((y1 - y0) * np.sin(a)) + x0
+            # y2 = ((x1 - x0) * np.sin(a)) + ((y1 - y0) * np.cos(a)) + y0
             cv2.circle(map, self._robot_position.astype(int), 5, (0, 255, 255), cv2.FILLED)
+            # cv2.arrowedLine(map, (x0, y0), (x2, y2),  
+            #         (0, 255, 255), 3, tipLength = 0.5)  
         cv2.imshow('map', map)
 
 

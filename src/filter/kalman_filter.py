@@ -1,6 +1,3 @@
-'''
-Extended_Kalman_Filter.py
-'''
 import math
 import numpy as np
 
