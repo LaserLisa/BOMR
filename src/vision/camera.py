@@ -90,6 +90,10 @@ class Camera(cv2.VideoCapture):
         """Returns the robot pose ([x,y],angle)"""
         return (self._robot_position, self._robot_orientation)
     
+    def get_goal_position(self) -> list:
+        """Returns the goal position"""
+        return self._goal_position
+    
     def _extract_robot_pose(self, show: bool = False):
         """
         Extracts the robot pose from latest frame
