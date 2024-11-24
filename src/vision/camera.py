@@ -74,7 +74,7 @@ class Camera(cv2.VideoCapture):
         map = self._map.copy()
         cv2.circle(map, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
         if pose_estimation:
-            cv2.circle(map, pose_estimation, 5, (0, 0, 255), cv2.FILLED)
+            cv2.circle(map, (pose_estimation/3).astype(int), 5, (0, 0, 255), cv2.FILLED)
         if self._robot_position is not None:
             cv2.circle(map, self._robot_position.astype(int), 5, (0, 255, 255), cv2.FILLED)
         cv2.imshow('map', map)
