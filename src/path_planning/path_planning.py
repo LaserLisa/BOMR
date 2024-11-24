@@ -8,7 +8,7 @@ import heapq
 import matplotlib.pyplot as plt
 
 def a_star(grid, start, goal):
-    rows, cols = len(grid), len(grid[0])
+    rows, cols = grid.shape
     directions = [
         (0, 1), (1, 0), (0, -1), (-1, 0),
         (1, 1), (1, -1), (-1, 1), (-1, -1)
@@ -16,6 +16,10 @@ def a_star(grid, start, goal):
 
     def heuristic(a, b):
         return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+
+    # Swap x and y coordinates for correct indexing
+    start = tuple(map(int, np.round(start[::-1])))  # Convert to (row, col)
+    goal = tuple(map(int, np.round(goal[::-1])))    # Convert to (row, col)
 
     open_set = []
     heapq.heappush(open_set, (0, start))
@@ -69,25 +73,26 @@ def inflate_borders(grid, robot_width):
     return inflated_grid
 
 def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=None, start=None, goal=None):
-    """Plots the grid with inflated cells in light gray."""
     rows, cols = grid.shape
     fig, ax = plt.subplots(figsize=(12, 10))
-    
-    # Create a visual grid: light gray for inflated, black for actual obstacles
+
+    # Create a visual grid with color codes
     display_grid = np.zeros_like(grid, dtype=float)
-    display_grid[inflated_grid == 0] = 0.5  # Inflated obstacles (light gray)
-    display_grid[grid == 0] = 0  # Original obstacles (black)
-    display_grid[inflated_grid == 1] = 1  # Free space (white)
-    
-    # Plot grid
+    display_grid[inflated_grid == 0] = 0.5  # Default free space as light grey
+    display_grid[grid == 1] = 0  # Original obstacles as black
+    display_grid[(inflated_grid == 1) & (grid == 0)] = 0.2  # Contours as dark grey
+
+    # Plot the grid
     ax.imshow(display_grid, cmap="Greys", origin="upper")
-    
-    # Plot start and goal
-    if start:
+
+    # Swap coordinates for start and goal to match plotting
+    if start is not None:
+        start = start[::-1]
         ax.scatter(start[1], start[0], c="green", s=100, label="Start")
-    if goal:
+    if goal is not None:
+        goal = goal[::-1]
         ax.scatter(goal[1], goal[0], c="red", s=100, label="Goal")
-    
+
     # Plot path
     if path:
         path_coords = np.array(path)
@@ -98,16 +103,33 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     if checkpoints:
         for r, c in checkpoints:
             ax.scatter(c, r, c="orange", s=50)
-    
-    ax.set_xticks(np.arange(-0.5, cols, 1), minor=True)
-    ax.set_yticks(np.arange(-0.5, rows, 1), minor=True)
-    ax.grid(which="minor", color="black", linestyle="-", linewidth=0.5)
-    ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+
+    # Add row and column labels at intervals of 20
+    for x in range(0, cols, 20):
+        ax.text(x, rows - 1 + 2, f"{x}", color="black", fontsize=10, ha="center")
+    for y in range(0, rows, 20):
+        ax.text(-2, y, f"{y}", color="black", fontsize=10, va="center")
+
+    # Remove ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.tick_params(left=False, bottom=False, labelleft=True, labelbottom=True)
+
     ax.legend()
     plt.show()
 
-def get_checkpoints(path):
-    """Returns the checkpoints from the path."""
+def get_checkpoints(map, start, goal):
+    # Define robot size
+    robot_width = 12
+    robot_radius = robot_width // 2
+
+    # Inflate the obstacles
+    inflated_grid = inflate_obstacles(map, robot_radius)
+    inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
+
+    # Run A* algorithm on the inflated grid
+    path = a_star(inflated_grid, start, goal)
+
     if not path:
         return []
     checkpoints = [path[0]]
@@ -117,31 +139,25 @@ def get_checkpoints(path):
         x2, y2 = path[i + 1]
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
             checkpoints.append(path[i])
+
+    plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
-# Define an 80x100 grid
-rows, cols = 80, 100
-grid = np.zeros((rows, cols))
 
-# Add obstacles to the grid
-grid[20:60, 30] = 1
-grid[40, 50:90] = 1
+# map_shape = (240, 350)
+# grid = np.zeros(map_shape)
+# grid[100:150, 50:80] = 1  # Example obstacle
 
-# Define start and goal points
-start = (6, 6)
-goal = (73, 93)
+# start = np.array([252.0, 110.5])  # Note: x and y will be swapped
+# goal = np.array([52, 190])
 
-# Define robot size
-robot_width = 12
-robot_radius = robot_width // 2
+# robot_width = 12
+# robot_radius = robot_width // 2
 
-# Inflate the obstacles
-inflated_grid = inflate_obstacles(grid, robot_radius)
-inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
+# inflated_grid = inflate_obstacles(grid, robot_radius)
+# inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
 
-# Run A* algorithm on the inflated grid
-path = a_star(inflated_grid, start, goal)
-checkpoints = get_checkpoints(path)
+# path = a_star(inflated_grid, start, goal)
+# checkpoints = get_checkpoints(path)
 
-# Visualize the result
-plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)
+# plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)
