@@ -3,7 +3,7 @@ goal:
   blue: 175
   green: 97
   kernel_size: 4
-  red: 146
+  red: 100
 map_size:
 - 350
 - 240
