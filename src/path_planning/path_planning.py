@@ -1,4 +1,4 @@
-# Input : matrice 80 x 100 where obstacles are represented by 0 and free space is represented by 1
+# Input : matrice 80 x 100 where obstacles are represented by 1 and free space is represented by 0
 #         start and goal coordinates (l, c) where l is the line and c is the column
 
 # Output: optimal path from start to goal coordinates
@@ -9,26 +9,24 @@ import matplotlib.pyplot as plt
 
 def a_star(grid, start, goal):
     rows, cols = len(grid), len(grid[0])
-    # 8 possible movements including diagonals
     directions = [
-        (0, 1), (1, 0), (0, -1), (-1, 0),  # Up, Down, Left, Right
-        (1, 1), (1, -1), (-1, 1), (-1, -1)  # Diagonals
+        (0, 1), (1, 0), (0, -1), (-1, 0),
+        (1, 1), (1, -1), (-1, 1), (-1, -1)
     ]
 
     def heuristic(a, b):
-        # Use Euclidean distance for diagonal movement
         return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
 
-    open_set = []                             # A priority queue to store nodes to explore
-    heapq.heappush(open_set, (0, start))      # (f, (row, col))
-    came_from = {}                            # Parent of each node
-    g_score = {start: 0}                      # Cost of the cheapest path from start to a node
-    f_score = {start: heuristic(start, goal)} # g_score + heuristic
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: heuristic(start, goal)}
 
-    while open_set: # While there are nodes to explore
-        _, current = heapq.heappop(open_set) # Get node with the lowest f_score
+    while open_set:
+        _, current = heapq.heappop(open_set)
 
-        if current == goal: # If we reached the goal, reconstruct the path by tracing back through parents
+        if current == goal:
             path = []
             while current in came_from:
                 path.append(current)
@@ -37,42 +35,37 @@ def a_star(grid, start, goal):
 
         for dr, dc in directions:
             neighbor = (current[0] + dr, current[1] + dc)
-            if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols and grid[neighbor[0]][neighbor[1]] == 1:
-                # Adjust cost for diagonal movement
-                move_cost = 1.05 if dr != 0 and dc != 0 else 1 # if diagonal movement, slightly discourage it as it's less efficient
+            if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols and grid[neighbor[0]][neighbor[1]] == 0:
+                move_cost = 1.05 if dr != 0 and dc != 0 else 1
                 tentative_g = g_score[current] + move_cost
-                if neighbor not in g_score or tentative_g < g_score[neighbor]: # If the neighbor is not visited yet or we found a cheaper path
+                if neighbor not in g_score or tentative_g < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
                     f_score[neighbor] = tentative_g + heuristic(neighbor, goal)
                     heapq.heappush(open_set, (f_score[neighbor], neighbor))
 
-    return []  # No path found
+    return []
 
 def inflate_obstacles(grid, robot_radius):
-    """Inflates obstacles in the grid to account for the robot's width."""
     rows, cols = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
         for c in range(cols):
-            if grid[r, c] == 0:  # If this cell is an obstacle
-                # Mark cells within the robot's radius as obstacles
+            if grid[r, c] == 1:
                 for dr in range(-robot_radius, robot_radius + 1):
                     for dc in range(-robot_radius, robot_radius + 1):
                         nr, nc = r + dr, c + dc
-                        # Ensure within bounds
                         if 0 <= nr < rows and 0 <= nc < cols:
-                            inflated_grid[nr, nc] = 0
+                            inflated_grid[nr, nc] = 1
     return inflated_grid
 
 def inflate_borders(grid, robot_width):
-    """Inflates the borders of the grid to account for the robot's width."""
     rows, cols = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
         for c in range(cols):
             if r < robot_width or r >= rows - robot_width or c < robot_width or c >= cols - robot_width:
-                inflated_grid[r, c] = 0
+                inflated_grid[r, c] = 1
     return inflated_grid
 
 def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=None, start=None, goal=None):
@@ -128,18 +121,18 @@ def get_checkpoints(path):
 
 # Define an 80x100 grid
 rows, cols = 80, 100
-grid = np.ones((rows, cols))
+grid = np.zeros((rows, cols))
 
 # Add obstacles to the grid
-grid[20:60, 30] = 0
-grid[40, 50:90] = 0
+grid[20:60, 30] = 1
+grid[40, 50:90] = 1
 
 # Define start and goal points
 start = (6, 6)
 goal = (73, 93)
 
 # Define robot size
-robot_width = 12 # The robot has a width of 11cm
+robot_width = 12
 robot_radius = robot_width // 2
 
 # Inflate the obstacles
