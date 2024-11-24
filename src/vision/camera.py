@@ -45,6 +45,8 @@ class Camera(cv2.VideoCapture):
             self._find_corners(show)
         print("corners found")
         self._extract_obstacles()
+        self._extract_goal()
+        self._extract_robot_pose()
         self._init_map = True
 
     def update(self, show_all: bool = False):
