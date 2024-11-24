@@ -14,7 +14,7 @@ class Extended_Kalman_Filter():
         # Covariance for EKF simulation
         self.dt = 1     #[s]
         self.input_speed = 14 #[mm/s]
-        self.scaling_factor = 1 #[mm/pxl]
+        self.scaling_factor = 3 #[mm/pxl]
         pxl_var = 0.25
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
