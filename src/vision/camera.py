@@ -72,7 +72,10 @@ class Camera(cv2.VideoCapture):
         and estimated robot position from the Kalman filter.
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
-        map = self._map.copy()
+        # map = self._map.copy()
+        map = perspective_transform(self._frame, self._corners, 
+                                       self._hyperparams.map_size[0], 
+                                       self._hyperparams.map_size[1])
         cv2.circle(map, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
 
         def draw_robot(position, angle, color):
