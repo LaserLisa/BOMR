@@ -14,5 +14,5 @@ obstacles:
   area: 1000
   blue: 75
   green: 71
-  kernel_size: 4
+  kernel_size: 3
   red: 64

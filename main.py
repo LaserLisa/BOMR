@@ -19,45 +19,46 @@ checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal)
 
 print("Initalize Thymio...")
 # TODO: Thymio initalization
-driver = Driving()
+# driver = Driving()
 # TODO: initialize kalman filter
 
 while True:
     # if obstacle_detected():
     #    ...
     
-    # else:
-    # move towards next checkpoint
-    # Get user input for the command
-    command = input("Enter command ('turn degrees' or 'move duration') or 'exit' to quit: ").strip()
-    if command.lower() == "exit":
-        print("Exiting program.")
-        break
+    # # else:
+    # # move towards next checkpoint
+    # # Get user input for the command
+    # command = input("Enter command ('turn degrees' or 'move duration') or 'exit' to quit: ").strip()
+    # if command.lower() == "exit":
+    #     print("Exiting program.")
+    #     break
 
-    # Parse the command
-    try:
-        if command.startswith("turn"):
-            _, degrees = command.split()
-            degrees = int(degrees)
-            driver.turn(degrees)
-        elif command.startswith("move"):
-            _, duration = command.split()
-            duration = int(duration)
-            driver.move(duration)
-        else:
-            print("Invalid command. Use 'turn degrees' or 'move duration'.")
-    except ValueError:
-        print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
+    # # Parse the command
+    # try:
+    #     if command.startswith("turn"):
+    #         _, degrees = command.split()
+    #         degrees = int(degrees)
+    #         driver.turn(degrees)
+    #     elif command.startswith("move"):
+    #         _, duration = command.split()
+    #         duration = int(duration)
+    #         driver.move(duration)
+    #     else:
+    #         print("Invalid command. Use 'turn degrees' or 'move duration'.")
+    # except ValueError:
+    #     print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
 
     # get robot pose
-    # cam.update(show_all=False)
+    # TODO: If you uncomment this line, comment the cam.update() below
+    # cam.update(corners= False, obstacles_goal=False, show_all=False)
     # robot_pose_px = cam.get_robot_pose()
 
     # # kalman filter
     # robot_pose_mm = ...
 
     # to display the current frame and the map
-    cam.update(show_all=False)
+    cam.update(corners= False, obstacles_goal=False, show_all=False)
     frame = cam.get_current_frame()
     cam.display_map()
     cv2.imshow('Camera', frame)
