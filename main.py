@@ -7,15 +7,15 @@ from driving import Driving
 
 # Open the default camera
 print("Initalizing camera...")
-cam = camera.Camera(1, window_size=2)
-pix2mm = cam.pixel2mm
+# cam = camera.Camera(1, window_size=2)
+# pix2mm = cam.pixel2mm
 
 print("Intializing map...")
-cam.initialize_map(show=True)
-robot_pose_px = cam.get_robot_pose()
-map = cam.get_map()
-goal = cam.get_goal_position()
-checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal)
+# cam.initialize_map(show=True)
+# robot_pose_px = cam.get_robot_pose()
+# map = cam.get_map()
+# goal = cam.get_goal_position()
+# checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal)
 
 print("Initalize Thymio...")
 # TODO: Thymio initalization
@@ -29,13 +29,21 @@ while True:
     # else:
     # move towards next checkpoint
     # Get user input for the command
-    command = input("Enter command ('turn degrees' or 'move duration') or 'exit' to quit: ").strip()
+    command = input("Enter command 5 coordinates: (pos_x, pos_y, pos_angle, check_x, check_y) or 'exit' to quit: ").strip()
     if command.lower() == "exit":
         print("Exiting program.")
         break
 
     # Parse the command
     try:
+        pos_x, pos_y, pos_angle, check_x, check_y = command.split()
+        pos_x = int(pos_x)
+        pos_y = int(pos_y)
+        pos_angle = int(pos_angle)
+        check_x = int(check_x)
+        check_y = int(check_y)
+        driver.move_to_checkpoint(pos_x, pos_y, pos_angle, check_x, check_y)
+        '''
         if command.startswith("turn"):
             _, degrees = command.split()
             degrees = int(degrees)
@@ -46,25 +54,26 @@ while True:
             driver.move(duration)
         else:
             print("Invalid command. Use 'turn degrees' or 'move duration'.")
+        '''
     except ValueError:
         print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
 
     # get robot pose
-    cam.update(show_all=False)
-    robot_pose_px = cam.get_robot_pose()
+    # cam.update(show_all=False)
+    # robot_pose_px = cam.get_robot_pose()
 
     # kalman filter
-    robot_pose_mm = ...
+    # robot_pose_mm = ...
 
     # to display the current frame and the map
-    cam.update(show_all=False)
-    frame = cam.get_current_frame()
-    cam.display_map()
-    cv2.imshow('Camera', frame)
+    # cam.update(show_all=False)
+    # frame = cam.get_current_frame()
+    # cam.display_map()
+    # cv2.imshow('Camera', frame)
 
     # Press 'q' to exit the loop
-    if cv2.waitKey(1) == ord('q'):
-        break
+    # if cv2.waitKey(1) == ord('q'):
+    #    break
 # Release the capture and writer objects
-cam.release()
-cv2.destroyAllWindows()
+# cam.release()
+# cv2.destroyAllWindows()
