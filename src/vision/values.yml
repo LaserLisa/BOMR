@@ -7,6 +7,9 @@ goal:
 map_size:
 - 350
 - 240
+map_size_mm:
+- 1050
+- 720
 obstacles:
   area: 1000
   blue: 75

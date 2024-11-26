@@ -140,7 +140,7 @@ def get_checkpoints(map, start, goal):
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
             checkpoints.append(path[i])
 
-    plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    # plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
 

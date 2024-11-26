@@ -34,6 +34,7 @@ class Hyperparameters:
     """
     def __init__(self, dict):
         self.map_size = dict["map_size"]
+        self.map_size_mm = dict["map_size_mm"]
         self.obstacles = Thresholds(dict["obstacles"])
         self.goal = Thresholds(dict["goal"])
 
@@ -45,6 +46,7 @@ def object_to_dict(obj):
     elif isinstance(obj, Hyperparameters):
         return {
             "map_size": obj.map_size,
+            "map_size_mm": obj.map_size_mm,
             "obstacles": object_to_dict(obj.obstacles),
             "goal": object_to_dict(obj.goal)
         }

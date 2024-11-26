@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 from .helpers import get_corner, perspective_transform, read_yaml, Hyperparameters
-from .measurements import Position
+from .measurements import Position, Orientation
 
 class Camera(cv2.VideoCapture):
-    def __init__(self, camera=0):
+    def __init__(self, camera=0, window_size=10):
         """
         Instantiates a camera
         
@@ -17,12 +17,13 @@ class Camera(cv2.VideoCapture):
         self._init_map = False
         self._corners = [None, None, None, None]
         self._goal_position = None
-        self._robot_position = None
-        self._robot_orientation = None
+        self._robot_position = Position(window_size)
+        self._robot_orientation = Orientation(window_size)
         self._aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
         self._aruco_detector = cv2.aruco.ArucoDetector(self._aruco_dict, 
                                                        cv2.aruco.DetectorParameters())
         self._hyperparams = Hyperparameters(read_yaml())
+        self.pixel2mm = self._hyperparams.map_size_mm[0]/self._hyperparams.map_size[0]
 
     def read(self) -> cv2.typing.MatLike:
         """Acquries new frame and returns it"""
@@ -45,7 +46,7 @@ class Camera(cv2.VideoCapture):
             self._find_corners(show)
         print("corners found")
         self._extract_obstacles()
-        while self._robot_position is None or self._goal_position is None:
+        while np.isnan(self._robot_position.value).all() or self._goal_position is None:
             self._extract_goal()
             self._extract_robot_pose()
             self.read()
@@ -60,12 +61,12 @@ class Camera(cv2.VideoCapture):
             show_all (bool): If True shows all intermediate windows. Default: False
         """
         self._frame = self.read()
-        # self._find_corners()
+        self._find_corners()
         # self._extract_obstacles(show_warped=show_all)
         # self._extract_goal(show_warped=show_all)
         self._extract_robot_pose(show=True)
 
-    def display_map(self, pose_estimation: np.ndarray|list = []):
+    def display_map(self, pose_estimation: tuple = None):
         """
         Displays the map with obstacles, goal position, robot position from vision
         and estimated robot position from the Kalman filter.
@@ -73,17 +74,25 @@ class Camera(cv2.VideoCapture):
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
         map = self._map.copy()
         cv2.circle(map, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
+
+        def draw_robot(position, angle, color):
+            radius = int(60/self.pixel2mm)
+            position = position.astype(int)
+            cv2.circle(map, position, radius, color, 2)
+            arrow_start_x = int(position[0] + radius * np.cos(angle))
+            arrow_start_y = int(position[1] - radius * np.sin(angle))
+            arrow_end_x = int(arrow_start_x + 10 * np.cos(angle))
+            arrow_end_y = int(arrow_start_y - 10 * np.sin(angle))
+            cv2.arrowedLine(map, (arrow_start_x, arrow_start_y), 
+                            (arrow_end_x, arrow_end_y), color, 2)
+
         if pose_estimation:
-            cv2.circle(map, (pose_estimation/3).astype(int), 5, (0, 0, 255), cv2.FILLED)
-        if self._robot_position is not None:
-            # (x0, y0) = self._robot_position.astype(int)
-            # (x1, y1) = (self._robot_position.astype(int)+[5,0])
-            # a = self._robot_orientation
-            # x2 = ((x1 - x0) * np.cos(a)) - ((y1 - y0) * np.sin(a)) + x0
-            # y2 = ((x1 - x0) * np.sin(a)) + ((y1 - y0) * np.cos(a)) + y0
-            cv2.circle(map, self._robot_position.astype(int), 5, (0, 255, 255), cv2.FILLED)
-            # cv2.arrowedLine(map, (x0, y0), (x2, y2),  
-            #         (0, 255, 255), 3, tipLength = 0.5)  
+            draw_robot(pose_estimation[0].astype(int), pose_estimation[1], (0, 255, 0))
+        if not (np.isnan(self._robot_position.value).all() or 
+                np.isnan(self._robot_orientation.value)):
+            position = self._robot_position.value.astype(int)
+            angle = self._robot_orientation.value
+            draw_robot(position, angle, (0, 255, 255))
         cv2.imshow('map', map)
 
 
@@ -99,7 +108,7 @@ class Camera(cv2.VideoCapture):
     
     def get_robot_pose(self) -> tuple:
         """Returns the robot pose ([x,y],angle)"""
-        return (self._robot_position, self._robot_orientation)
+        return (self._robot_position.value, self._robot_orientation.value)
     
     def get_goal_position(self) -> list:
         """Returns the goal position"""
@@ -129,14 +138,18 @@ class Camera(cv2.VideoCapture):
                     center = np.mean([c1, c3], axis=0)
                     p = np.mean([c1, c2], axis=0)
                     angle = np.arctan2((center-p)[1], (p-center)[0])
-                    self._robot_orientation = angle
-                    self._robot_position = center
+                    self._robot_orientation.update(angle)
+                    self._robot_position.update(center)
                 if show:
                     cv2.aruco.drawDetectedMarkers(img, corners, ids)
+        else:
+            # if no aruco marker found update with nan
+            self._robot_position.update([np.nan, np.nan])
+            self._robot_orientation.update(np.nan)
             
         if show:
-            if self._robot_orientation is not None:
-                cv2.putText(img, str(np.degrees(self._robot_orientation).astype(int)), (50, 50), 
+            if not np.isnan(self._robot_orientation.value):
+                cv2.putText(img, str(np.degrees(self._robot_orientation.value).astype(int)), (50, 50), 
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0))
             cv2.imshow('Robot', img)
 
