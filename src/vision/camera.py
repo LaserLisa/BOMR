@@ -137,15 +137,15 @@ class Camera(cv2.VideoCapture):
                     c3 = corners[0][0][2].astype(int)
                     center = np.mean([c1, c3], axis=0)
                     p = np.mean([c1, c2], axis=0)
-                    angle = np.arctan2((center-p)[1], (p-center)[0])
-                    self._robot_orientation.update(angle)
+                    # angle = np.arctan2((center-p)[1], (p-center)[0])
+                    self._robot_orientation.update(center-p)
                     self._robot_position.update(center)
                 if show:
                     cv2.aruco.drawDetectedMarkers(img, corners, ids)
         else:
             # if no aruco marker found update with nan
             self._robot_position.update([np.nan, np.nan])
-            self._robot_orientation.update(np.nan)
+            self._robot_orientation.update([np.nan, np.nan])
             
         if show:
             if not np.isnan(self._robot_orientation.value):

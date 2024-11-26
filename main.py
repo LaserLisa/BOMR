@@ -7,7 +7,7 @@ from driving import Driving
 
 # Open the default camera
 print("Initalizing camera...")
-cam = camera.Camera(1, window_size=2)
+cam = camera.Camera(2, window_size=10)
 pix2mm = cam.pixel2mm
 
 print("Intializing map...")
@@ -50,11 +50,11 @@ while True:
         print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
 
     # get robot pose
-    cam.update(show_all=False)
-    robot_pose_px = cam.get_robot_pose()
+    # cam.update(show_all=False)
+    # robot_pose_px = cam.get_robot_pose()
 
-    # kalman filter
-    robot_pose_mm = ...
+    # # kalman filter
+    # robot_pose_mm = ...
 
     # to display the current frame and the map
     cam.update(show_all=False)
