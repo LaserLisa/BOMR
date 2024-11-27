@@ -28,7 +28,6 @@ print("Initalize Thymio...")
 # EKF = Kalman_Filter.Extended_Kalman_Filter()
 # EKF.Sigma = np.eye(5) # confidence of EKF
 # EKF.Mu = [robot_pose_px[0],robot_pose_px[1],robot_pose_px[2],0,0] #initial values for position and orientation
-# EKF.input_speed=CALIBRATE_FACTOR*50
 # Wheel_Distance = 100
 # Scaling_Factor = 3
 
@@ -76,7 +75,7 @@ while True:
     EKF.dt = 0.2
     # get speeds in mm/s
     motor_value = (th.get_var("motor.left.target"), th.get_var("motor.right.target"), Wheel_Distance, Scaling_Factor)
-    EKF.extended_kalman(EKF.u_input(motor_values),(robot_pose_px,0,0))
+    EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
     robot_pose_mm = (EKF.Mu[0], EKF.Mu[1]), EKF.Mu[2])
     #reset filter 
     EKF.Mu = [robot_pose_mm[0],robot_pose_mm[1],robot_pose_mm[2],0,0]
