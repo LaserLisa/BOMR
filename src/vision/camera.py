@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 from .helpers import get_corner, perspective_transform, read_yaml, Hyperparameters
 from .measurements import Position, Orientation
 
@@ -13,7 +14,9 @@ class Camera(cv2.VideoCapture):
         """
         super().__init__(camera)
         self._frame, self.ret = None, None
+        self._warped = None
         self._map = None
+        self._obstacles_contours = None
         self._init_map = False
         self._corners = [None, None, None, None]
         self._goal_position = None
@@ -41,10 +44,18 @@ class Camera(cv2.VideoCapture):
         Args:
             show (bool): If True shows camera frame while initalization. Default True.
         """
+        t_start = time.time()
+        # let the camera adjust to the light
+        print(">>>initialize_map():\tadjusting to light...")
+        while time.time() - t_start < 1:
+            self.read()
         while None in self._corners:
             self.read()
             self._find_corners(show)
-        print("corners found")
+        self._warped = perspective_transform(self._frame, self._corners,
+                                            self._hyperparams.map_size[0],
+                                            self._hyperparams.map_size[1])
+        print(">>>initialize_map():\tcorners found, extracting obstacles...")
         self._extract_obstacles()
         while np.isnan(self._robot_position.value).all() or self._goal_position is None:
             self._extract_goal()
@@ -52,38 +63,48 @@ class Camera(cv2.VideoCapture):
             self.read()
         self._init_map = True
 
-    def update(self, show_all: bool = False):
+    def update(self, corners: bool, obstacles_goal: bool, show_all: bool = False):
         """
-        Aquire new frame, find corners, extract obstacles, update goal and robot
-        position.
+        Aquire new frame and updates the robot postion. Optionally also updates the 
+        corners, obstacles and goal position.
 
         Args:
+            corners (bool): If True relocates the corners.
+            obstacles_goal (bool): If True updates obstacles and goal position.
             show_all (bool): If True shows all intermediate windows. Default: False
         """
         self._frame = self.read()
-        self._find_corners()
-        # self._extract_obstacles(show_warped=show_all)
-        # self._extract_goal(show_warped=show_all)
-        self._extract_robot_pose(show=True)
+        if corners:
+            self._find_corners()
+        self._warped = perspective_transform(self._frame, self._corners,
+                                            self._hyperparams.map_size[0],
+                                            self._hyperparams.map_size[1])
+        if obstacles_goal:
+            self._extract_obstacles(show_warped=show_all)
+            self._extract_goal(show_warped=show_all)
+        self._extract_robot_pose(show=show_all)
 
-    def display_map(self, pose_estimation: tuple = None):
+    def display_map(self, pose_estimation: tuple = None, alpha: float = 0.7):
         """
         Displays the map with obstacles, goal position, robot position from vision
         and estimated robot position from the Kalman filter.
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
-        map = self._map.copy()
-        cv2.circle(map, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
-
+        map = self._warped.copy()
+        overlay = map.copy()
+        # draw goal position
+        cv2.circle(overlay, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
+        # draw obstacles
+        cv2.drawContours(overlay, self._obstacles_contours, -1, (255, 255, 255), cv2.FILLED)
         def draw_robot(position, angle, color):
             radius = int(60/self.pixel2mm)
             position = position.astype(int)
-            cv2.circle(map, position, radius, color, 2)
+            cv2.circle(overlay, position, radius, color, 2)
             arrow_start_x = int(position[0] + radius * np.cos(angle))
             arrow_start_y = int(position[1] - radius * np.sin(angle))
             arrow_end_x = int(arrow_start_x + 10 * np.cos(angle))
             arrow_end_y = int(arrow_start_y - 10 * np.sin(angle))
-            cv2.arrowedLine(map, (arrow_start_x, arrow_start_y), 
+            cv2.arrowedLine(overlay, (arrow_start_x, arrow_start_y), 
                             (arrow_end_x, arrow_end_y), color, 2)
 
         if pose_estimation:
@@ -93,6 +114,7 @@ class Camera(cv2.VideoCapture):
             position = self._robot_position.value.astype(int)
             angle = self._robot_orientation.value
             draw_robot(position, angle, (0, 255, 255))
+        map = cv2.addWeighted(overlay, alpha, map, 1-alpha, 0)
         cv2.imshow('map', map)
 
 
@@ -120,9 +142,7 @@ class Camera(cv2.VideoCapture):
         Args:
             show (bool): If True shows the found aruco marker
         """
-        warped = perspective_transform(self._frame, self._corners, 
-                                       self._hyperparams.map_size[0], 
-                                       self._hyperparams.map_size[1])
+        warped = self._warped.copy() 
         if show:
             img = warped.copy()
         gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
@@ -137,15 +157,15 @@ class Camera(cv2.VideoCapture):
                     c3 = corners[0][0][2].astype(int)
                     center = np.mean([c1, c3], axis=0)
                     p = np.mean([c1, c2], axis=0)
-                    angle = np.arctan2((center-p)[1], (p-center)[0])
-                    self._robot_orientation.update(angle)
+                    # angle = np.arctan2((center-p)[1], (p-center)[0])
+                    self._robot_orientation.update(center-p)
                     self._robot_position.update(center)
                 if show:
                     cv2.aruco.drawDetectedMarkers(img, corners, ids)
         else:
             # if no aruco marker found update with nan
             self._robot_position.update([np.nan, np.nan])
-            self._robot_orientation.update(np.nan)
+            self._robot_orientation.update([np.nan, np.nan])
             
         if show:
             if not np.isnan(self._robot_orientation.value):
@@ -186,9 +206,7 @@ class Camera(cv2.VideoCapture):
             show_warped (bool): If True shows the cropped image with drawn contours. 
                                 Default: False.
         """
-        warped = perspective_transform(self._frame, self._corners, 
-                                       self._hyperparams.map_size[0], 
-                                       self._hyperparams.map_size[1])
+        warped = self._warped.copy()
         thresholded = cv2.inRange(warped, (0, 0, 0), 
                                   (self._hyperparams.obstacles.blue, 
                                    self._hyperparams.obstacles.green,
@@ -203,7 +221,7 @@ class Camera(cv2.VideoCapture):
     
         # filter controus where area < 1000
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > self._hyperparams.obstacles.area]
-
+        self._obstacles_contours = contours
         map = np.zeros_like(warped, dtype=np.uint8)
         
         cv2.drawContours(map, contours, -1, (255, 255, 255), cv2.FILLED)
@@ -221,9 +239,7 @@ class Camera(cv2.VideoCapture):
             show_warped (bool): If True shows the cropped image with drawn contour. 
                                 Default: False.
         """
-        warped = perspective_transform(self._frame, self._corners, 
-                                       self._hyperparams.map_size[0], 
-                                       self._hyperparams.map_size[1])
+        warped = self._warped.copy()
         thresholded = cv2.inRange(warped, (0, 0, self._hyperparams.goal.red), 
                                     (self._hyperparams.goal.blue, 
                                      self._hyperparams.goal.green,255))

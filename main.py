@@ -7,8 +7,10 @@ from driving import Driving
 
 # Open the default camera
 print("Initalizing camera...")
+
 # cam = camera.Camera(1, window_size=2)
 # pix2mm = cam.pixel2mm
+
 
 print("Intializing map...")
 # cam.initialize_map(show=True)
@@ -19,13 +21,12 @@ print("Intializing map...")
 
 print("Initalize Thymio...")
 # TODO: Thymio initalization
-driver = Driving()
+# driver = Driving()
 # TODO: initialize kalman filter
 
 while True:
     # if obstacle_detected():
     #    ...
-    
     # else:
     # move towards next checkpoint
     # Get user input for the command
@@ -66,10 +67,11 @@ while True:
     # robot_pose_mm = ...
 
     # to display the current frame and the map
-    # cam.update(show_all=False)
-    # frame = cam.get_current_frame()
-    # cam.display_map()
-    # cv2.imshow('Camera', frame)
+    cam.update(corners= False, obstacles_goal=False, show_all=False)
+    frame = cam.get_current_frame()
+    cam.display_map()
+    cv2.imshow('Camera', frame)
+
 
     # Press 'q' to exit the loop
     # if cv2.waitKey(1) == ord('q'):
