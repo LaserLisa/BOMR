@@ -80,7 +80,7 @@ class Extended_Kalman_Filter():
         y = np.dot(C,x) + np.diag(self.R)
         return y
 
-    def capture_measurements(self, robot_pose_px):
+    def system_state(self, robot_pose_px):
         '''
         Function that takes a picture and analyses the data to return the current measurement state vector.
 
