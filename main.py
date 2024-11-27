@@ -21,7 +21,7 @@ print("Intializing map...")
 
 print("Initalize Thymio...")
 # TODO: Thymio initalization
-# driver = Driving()
+driver = Driving()
 # TODO: initialize kalman filter
 
 while True:
@@ -67,10 +67,10 @@ while True:
     # robot_pose_mm = ...
 
     # to display the current frame and the map
-    cam.update(corners= False, obstacles_goal=False, show_all=False)
-    frame = cam.get_current_frame()
-    cam.display_map()
-    cv2.imshow('Camera', frame)
+    # cam.update(corners= False, obstacles_goal=False, show_all=False)
+    # frame = cam.get_current_frame()
+    # cam.display_map()
+    # cv2.imshow('Camera', frame)
 
 
     # Press 'q' to exit the loop

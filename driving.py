@@ -43,18 +43,29 @@ class Driving:
     def turn(self, degrees):
         speed = 200
         degrees = degrees % 360  # normalization
+        scaling_factor = 0.01 # empirical value
 
         if degrees >= 180:
-            duration = 1.5  # TODO: Adjust for accurate turning
+            duration = (degrees/90)*scaling_factor  
             self.execute_command(speed, -speed, duration)
 
         elif degrees < 180:
-            duration = 1.5  # TODO: Adjust for accurate turning
+            duration = (degrees/90)*scaling_factor
             self.execute_command(-speed, speed, duration)
 
-    def move(self, duration):
-        speed = 200
-        # Some scaling between pixels and mm?
+    def move(self, distance):
+        """
+        Move the robot forward for a given distance in millimeters.
+
+        :param distance: Distance to move in mm
+        """
+        speed = 200  # Motor speed
+        scaling_factor = 0.01  # Placeholder scaling factor, adjust empirically
+
+        # Calculate duration using the scaling factor
+        duration = distance * scaling_factor
+
+        print(f"Moving {distance} mm with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
         self.execute_command(speed, speed, duration)
 
     def px_to_mm(self, val):
