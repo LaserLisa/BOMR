@@ -23,9 +23,13 @@ def run_local_navigation(map, current_pose, next_checkpoints, goal, mode="global
             print("New obstacle detected!")
             if mode == "local":
                 print("Switching to local navigation mode...")
-                # Contourn the obstacle until a clear path between the current pose and one of the next checkpoints is found
+                # Try to find a local path
                 next_checkpoints = get_local_path(map, current_pose, checkpoint)
-                print("The new path is:", next_checkpoints) 
+                print("The calculated local path is:", next_checkpoints)
+                if not next_checkpoints:  # If local path fails, fall back to global
+                    print("Local navigation failed, switching to global mode...")
+                    next_checkpoints = get_global_path(map, current_pose, goal)
+                print("The new path is:", next_checkpoints)
                 break
             else: 
                 print("Recomputing the global navigation algorithm...")
@@ -42,7 +46,6 @@ def run_local_navigation(map, current_pose, next_checkpoints, goal, mode="global
             break  # Process one step at a time
     
     return current_pose, next_checkpoints
-
       
 def is_path_clear(map, current_pose, checkpoint):
     # 1. Get the path from the current_pose to the checkpoint
@@ -85,7 +88,12 @@ def get_direction(current_pose, checkpoint):
 def get_local_path(map, current_pose, checkpoint):
     # Bypass the obstacle by finding a local path to the next checkpoint
     obstacle_direction = get_obstacle_direction(map, current_pose)
+    if obstacle_direction is None:
+        print("No obstacle detected near the current position. Cannot contour locally.")
+        return []  # Fall back to global navigation
+    print("Obstacle detected in direction:", obstacle_direction)
     next_checkpoints = contourn_obstacle(map, current_pose, obstacle_direction)
+    print("Bypassing obstacle, new checkpoints:", next_checkpoints)
     return next_checkpoints
 
 def get_obstacle_direction(map, current_pose):
