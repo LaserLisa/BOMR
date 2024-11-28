@@ -48,10 +48,13 @@ class Driving:
         if degrees >= 180:
             duration = (degrees/90)*scaling_factor  
             self.execute_command(speed, -speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
+        
 
         elif degrees < 180:
             duration = (degrees/90)*scaling_factor
             self.execute_command(-speed, speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
 
     def move(self, distance):
         """
@@ -60,7 +63,7 @@ class Driving:
         :param distance: Distance to move in mm
         """
         speed = 200  # Motor speed
-        scaling_factor = 0.01  # Placeholder scaling factor, adjust empirically
+        scaling_factor = 0.005  # empirical
 
         # Calculate duration using the scaling factor
         duration = distance * scaling_factor
@@ -73,8 +76,8 @@ class Driving:
 
     def move_to_checkpoint(self, pos_x, pos_y, pos_angle, check_x, check_y):
         #I assume pos_angle to be 0 when facing North and go towards 360 counter-clockwise!
-        
-        #calculate rotation & distance
+        #x, y coordinates are in milimeters, pixel to mm mapping TBD more precisely
+    
         dx = check_x - pos_x
         dy = check_y - pos_y
         
@@ -87,5 +90,6 @@ class Driving:
         elif(dx < 0):
             dir = math.degrees(math.atan(dy/dx)) + 90
 
-        self.turn(dir - pos_angle)
+
+        #self.turn(dir - pos_angle)
         self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
