@@ -74,7 +74,7 @@ while True:
     print(">>> Filtering")
     EKF.dt = 0.2
     # get speeds in mm/s
-    motor_value = (th.get_var("motor.left.target"), th.get_var("motor.right.target"), Wheel_Distance, Scaling_Factor)
+    motor_values = (driving.get_motor_speeds(), Wheel_Distance, Scaling_Factor)
     EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
     robot_pose_mm = (EKF.Mu[0], EKF.Mu[1]), EKF.Mu[2])
     #reset filter 
