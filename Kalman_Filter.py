@@ -12,7 +12,7 @@ class Extended_Kalman_Filter():
         by taking into account pixel resolution, image scale and computational errors from our find_robot function.
         '''
         # Covariance for EKF simulation
-        self.dt = 1     #[s]
+        self.dt = 0.2     #[s]
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = 3 #[mm/pxl]
         pxl_var = 0.25
@@ -80,7 +80,7 @@ class Extended_Kalman_Filter():
         y = np.dot(C,x) + np.diag(self.R)
         return y
 
-    def capture_measurements(self,ur):
+    def system_state(self, robot_pose_px):
         '''
         Function that takes a picture and analyses the data to return the current measurement state vector.
 
@@ -93,15 +93,15 @@ class Extended_Kalman_Filter():
                               velocity and angular velocity mesurements.
         '''
         y=np.zeros(5).T
-        y[0] = ur.coords[0]
-        y[1] = ur.coords[1]
-        y[2] = ur.angle
+        y[0] = robot_pose_px[0]
+        y[1] = robot_pose_px[1]
+        y[2] = robot_pose_px[2]
         y[3] = math.sqrt((y[0]-self.Mu[0])**2+(y[1]-self.Mu[1])**2)/self.dt
         y[4] = (y[2]-self.Mu[2])/self.dt
         y_current = self.measure_state(y)
         return y_current
 
-    def thymio_state(self, u, Q, delta_t, Mu):
+    def Get_Mu_pred(self, u, Q, delta_t, Mu):
         '''
         Function that returns the current system state values depending on previous system state values
         and current input motor control vector.
@@ -141,20 +141,6 @@ class Extended_Kalman_Filter():
                      [0,0,0,0,1]])
         return G
 
-    def get_Mu_pred(self, u, delta_t, ur):
-        '''
-        Function that returns the actual value of 'Mu_pred'.
-
-        Inputs: - u       : The current motor control values.
-                            1x2 vector that holds current inputed speed and angular velocity.
-                - delta_t : Time interval.
-                - ur      : utilsRobot instance.
-
-        Output: - Mu_pred : Predicted value of 'Mu_pred'.
-        '''
-        Q = self.process_cov()
-        Mu_pred = self.thymio_state(u, Q, delta_t, np.array([ur.coords[0], ur.coords[1], ur.angle, 0, 0]).T)
-        return Mu_pred
 
     def extended_kalman(self, u, y):
         '''
@@ -180,7 +166,7 @@ class Extended_Kalman_Filter():
         '''
         #Predict values
         Q = self.process_cov()
-        Mu_pred = self.thymio_state(u, Q, self.dt, self.Mu)
+        Mu_pred = self.Get_Mu_pred(u, Q, self.dt, self.Mu)
         G = self.jacobian_G(self.Mu[2], u[0])
         Sigma_pred = np.dot(G,np.dot(self.Sigma,G.T)) + Q
 
