@@ -72,10 +72,11 @@ if __name__ == "__main__":
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal)
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)
+    cam.set_checkpoints(checkpoints)
 
     print("Initializing Thymio...")
-    driver = Driving()
+    # driver = Driving()
 
     # print(">> Initializing filter")
     # ekf = Extended_Kalman_Filter()
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     print("Camera released")
     cv2.destroyAllWindows()
     print("OpenCV windows destroyed")
-    driver.__del__()
+    # driver.__del__()
     print("Driver released")
     
     print("Active threads after join:")

@@ -22,6 +22,7 @@ class Camera(cv2.VideoCapture):
         self._goal_position = None
         self._robot_position = Position(window_size)
         self._robot_orientation = Orientation(window_size)
+        self._checkpoints = None
         self._aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
         self._aruco_detector = cv2.aruco.ArucoDetector(self._aruco_dict, 
                                                        cv2.aruco.DetectorParameters())
@@ -112,6 +113,20 @@ class Camera(cv2.VideoCapture):
             arrow_end_y = int(arrow_start_y - 10 * np.sin(angle))
             cv2.arrowedLine(overlay, (arrow_start_x, arrow_start_y), 
                             (arrow_end_x, arrow_end_y), color, 2)
+        
+        def draw_path(checkpoints):
+            # Draw checkpoints (as circles) on the image
+            for checkpoint in checkpoints:
+                cv2.circle(overlay, checkpoint, 5, (0, 0, 255), -1)  # Red circles for checkpoints
+
+            # Draw lines from checkpoint to checkpoint
+            for i in range(len(checkpoints) - 1):
+                start_point = checkpoints[i]
+                end_point = checkpoints[i + 1]
+                cv2.line(overlay, start_point, end_point, (0, 255, 0), 2)  # Green line
+        
+        if self._checkpoints:
+            draw_path(self._checkpoints)
 
         if pose_estimation:
             draw_robot(pose_estimation[0].astype(int), pose_estimation[1], (0, 255, 0))
@@ -142,6 +157,10 @@ class Camera(cv2.VideoCapture):
         """Returns the goal position"""
         return self._goal_position
     
+    def set_checkpoints(self, points):
+        """Sets the list of checkpoints"""
+        self._checkpoints = points
+        
     def _extract_robot_pose(self, show: bool = False):
         """
         Extracts the robot pose from latest frame

@@ -118,10 +118,13 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     ax.legend()
     plt.show()
 
-def get_checkpoints(map, start, goal):
+def get_checkpoints(map, start, goal, px2mm):
     # Define robot size
     robot_width = 12
-    robot_radius = robot_width // 2
+    robot_radius = robot_width / 2
+    
+    # transform cm to px
+    robot_radius = int(robot_radius*10/px2mm)
 
     # Inflate the obstacles
     inflated_grid = inflate_obstacles(map, robot_radius)
@@ -132,13 +135,13 @@ def get_checkpoints(map, start, goal):
 
     if not path:
         return []
-    checkpoints = [path[0]]
+    checkpoints = [[path[0][1], path[0][0]]]
     for i in range(1, len(path) - 1):
         x0, y0 = path[i - 1]
         x1, y1 = path[i]
         x2, y2 = path[i + 1]
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
-            checkpoints.append(path[i])
+            checkpoints.append([path[i][1], path[i][0]])
 
     # plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
