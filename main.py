@@ -21,6 +21,9 @@ print("Intializing map...")
 
 print("Initalize Thymio...")
 # TODO: Thymio initalization
+
+driver = Driving()
+# TODO: initialize kalman filter
 # driver = Driving()
 
 
@@ -30,6 +33,7 @@ print("Initalize Thymio...")
 # EKF.Mu = [robot_pose_px[0],robot_pose_px[1],robot_pose_px[2],0,0] #initial values for position and orientation
 # Wheel_Distance = 100
 # Scaling_Factor = 3
+
 
 while True:
     # if obstacle_detected():
@@ -81,10 +85,10 @@ while True:
     EKF.Mu = [robot_pose_mm[0],robot_pose_mm[1],robot_pose_mm[2],0,0]
 
     # to display the current frame and the map
-    cam.update(corners= False, obstacles_goal=False, show_all=False)
-    frame = cam.get_current_frame()
-    cam.display_map()
-    cv2.imshow('Camera', frame)
+    # cam.update(corners= False, obstacles_goal=False, show_all=False)
+    # frame = cam.get_current_frame()
+    # cam.display_map()
+    # cv2.imshow('Camera', frame)
 
 
     # Press 'q' to exit the loop
