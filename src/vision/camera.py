@@ -37,7 +37,7 @@ class Camera(cv2.VideoCapture):
         """Returns current frame of camera"""
         return self._frame
     
-    def initialize_map(self, show: bool = True):
+    def initialize_map(self, show: bool = True, show_all: bool = False):
         """"
         Initializes the map by extracting the obstacles from
 
@@ -49,6 +49,7 @@ class Camera(cv2.VideoCapture):
         print(">>>initialize_map():\tadjusting to light...")
         while time.time() - t_start < 1:
             self.read()
+            cv2.waitKey(1)
         while None in self._corners:
             self.read()
             self._find_corners(show)
@@ -56,11 +57,16 @@ class Camera(cv2.VideoCapture):
                                             self._hyperparams.map_size[0],
                                             self._hyperparams.map_size[1])
         print(">>>initialize_map():\tcorners found, extracting obstacles...")
-        self._extract_obstacles()
+        self._extract_obstacles(show_all)
         while np.isnan(self._robot_position.value).all() or self._goal_position is None:
-            self._extract_goal(show)
-            self._extract_robot_pose(show)
+            self._extract_goal(show_all)
+            self._extract_robot_pose(show_all)
             self.read()
+            self._warped = perspective_transform(self._frame, self._corners,
+                                            self._hyperparams.map_size[0],
+                                            self._hyperparams.map_size[1])
+            if show:
+                cv2.waitKey(1)
         self._init_map = True
 
     def update(self, corners: bool, obstacles_goal: bool, show_all: bool = False):
@@ -229,8 +235,6 @@ class Camera(cv2.VideoCapture):
             cv2.drawContours(warped, contours, -1, (0, 0, 255), 1)
             cv2.imshow('warped', warped)
         self._map = map
-
-        print('extract obstacles done')
 
 
     def _extract_goal(self, show_warped: bool = False):

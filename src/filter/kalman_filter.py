@@ -108,7 +108,7 @@ class Extended_Kalman_Filter():
         y[0] = robot_pose_px[0][0]
         y[1] = robot_pose_px[0][1]
         y[2] = robot_pose_px[1]
-        y[3] = math.sqrt((y[0]-self.Mu[0])**2+(y[1]-self.Mu[1])**2)/self.dt
+        y[3] = np.sqrt((y[0]-self.Mu[0])**2+(y[1]-self.Mu[1])**2)/self.dt
         y[4] = (y[2]-self.Mu[2])/self.dt
         y_current = self.measure_state(y)
         return y_current
