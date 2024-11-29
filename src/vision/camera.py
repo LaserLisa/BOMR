@@ -47,7 +47,7 @@ class Camera(cv2.VideoCapture):
         """
         t_start = time.time()
         # let the camera adjust to the light
-        print(">>>initialize_map():\tadjusting to light...")
+        print("\t\t>>>initialize_map():\tadjusting to light...")
         while time.time() - t_start < 1:
             self.read()
             cv2.waitKey(1)
@@ -57,8 +57,9 @@ class Camera(cv2.VideoCapture):
         self._warped = perspective_transform(self._frame, self._corners,
                                             self._hyperparams.map_size[0],
                                             self._hyperparams.map_size[1])
-        print(">>>initialize_map():\tcorners found, extracting obstacles...")
+        print("\t\t>>>initialize_map():\tcorners found, extracting obstacles...")
         self._extract_obstacles(show_all)
+        print("\t\t>>>initialize_map():\textracting robot and goal position...")
         while np.isnan(self._robot_position.value).all() or self._goal_position is None:
             self._extract_goal(show_all)
             self._extract_robot_pose(show_all)
@@ -67,7 +68,9 @@ class Camera(cv2.VideoCapture):
                                             self._hyperparams.map_size[0],
                                             self._hyperparams.map_size[1])
             if show:
+                cv2.imshow('Camera', self._frame)
                 cv2.waitKey(1)
+        cv2.destroyWindow("Camera")
         self._init_map = True
 
     def update(self, corners: bool, obstacles_goal: bool, show_all: bool = False):
@@ -160,7 +163,7 @@ class Camera(cv2.VideoCapture):
     def set_checkpoints(self, points):
         """Sets the list of checkpoints"""
         self._checkpoints = points
-        
+
     def _extract_robot_pose(self, show: bool = False):
         """
         Extracts the robot pose from latest frame
