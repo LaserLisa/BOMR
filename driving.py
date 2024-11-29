@@ -43,18 +43,32 @@ class Driving:
     def turn(self, degrees):
         speed = 200
         degrees = degrees % 360  # normalization
+        scaling_factor = 0.01 # empirical value
 
         if degrees >= 180:
-            duration = 1.5  # TODO: Adjust for accurate turning
+            duration = (degrees/90)*scaling_factor  
             self.execute_command(speed, -speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
+        
 
         elif degrees < 180:
-            duration = 1.5  # TODO: Adjust for accurate turning
+            duration = (degrees/90)*scaling_factor
             self.execute_command(-speed, speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
 
-    def move(self, duration):
-        speed = 200
-        # Some scaling between pixels and mm?
+    def move(self, distance):
+        """
+        Move the robot forward for a given distance in millimeters.
+
+        :param distance: Distance to move in mm
+        """
+        speed = 200  # Motor speed
+        scaling_factor = 0.005  # empirical
+
+        # Calculate duration using the scaling factor
+        duration = distance * scaling_factor
+
+        print(f"Moving {distance} mm with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
         self.execute_command(speed, speed, duration)
 
     def px_to_mm(self, val):
@@ -62,8 +76,8 @@ class Driving:
 
     def move_to_checkpoint(self, pos_x, pos_y, pos_angle, check_x, check_y):
         #I assume pos_angle to be 0 when facing North and go towards 360 counter-clockwise!
-        
-        #calculate rotation & distance
+        #x, y coordinates are in milimeters, pixel to mm mapping TBD more precisely
+    
         dx = check_x - pos_x
         dy = check_y - pos_y
         
@@ -76,5 +90,29 @@ class Driving:
         elif(dx < 0):
             dir = math.degrees(math.atan(dy/dx)) + 90
 
-        self.turn(dir - pos_angle)
+
+        #self.turn(dir - pos_angle)
         self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
+
+
+    def get_motor_speeds(self):
+        """
+        Returns the current speeds of the left and right motors.
+        
+        Outputs:
+        - left_speed: Speed of the left motor
+        - right_speed: Speed of the right motor
+        """
+        try:
+            # Fetch motor speed values from Thymio's variables
+            left_speed = self.node["motor.left.target"]
+            right_speed = self.node["motor.right.target"]
+
+            # Convert to mm/s using the calibration factor
+            left_speed = 0.4 * left_speed
+            right_speed = 0.4 * right_speed
+            return left_speed, right_speed
+        except KeyError as e:
+            print("Error: Unable to fetch motor speeds. Are the motor variables available?")
+            return None, None
+
