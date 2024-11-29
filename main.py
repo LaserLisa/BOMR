@@ -17,6 +17,7 @@ cam.initialize_map(show=True)
 robot_pose_px = cam.get_robot_pose()
 map = cam.get_map()
 goal = cam.get_goal_position()
+print("gettng checkpoints")
 checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal)
 
 
@@ -27,7 +28,7 @@ driver = Driving()
 
 # TODO: initialize kalman filter
 print(">> Initializing filter") 
-EKF = Kalman_Filter.Extended_Kalman_Filter()
+EKF = Extended_Kalman_Filter()
 EKF.Sigma = np.eye(5) # confidence of EKF
 EKF.Mu = [robot_pose_px[0][0],robot_pose_px[0][1],robot_pose_px[1],0,0] #initial values for position and orientation
 EKF.old_time = time.time()
@@ -71,7 +72,7 @@ while True:
         print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
 
     # get robot pose
-    cam.update(show_all=False)
+    cam.update(corners= False, obstacles_goal=False, show_all=False)
     robot_pose_px = cam.get_robot_pose()
 
     # kalman filter, position in pixels and angle in radians 
