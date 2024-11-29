@@ -104,16 +104,13 @@ class Driving:
         - left_speed: Speed of the left motor
         - right_speed: Speed of the right motor
         """
-    # try:
-        # Fetch motor speed values from Thymio's variables
-        left_speed = self.node["motor.left.speed"]
-        right_speed = self.node["motor.right.speed"]
-
-        # Convert to mm/s using the calibration factor
-        left_speed = 0.4 * left_speed
-        right_speed = 0.4 * right_speed
-        return left_speed, right_speed
-    # except KeyError as e:
-        # print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
-        # return None, None
-
+        try:
+            # Fetch motor speed values from Thymio's variables
+            left_speed = self.node["motor.left.speed"]
+            right_speed = self.node["motor.right.speed"]            # Convert to mm/s using the calibration factor
+            left_speed = 0.4 * left_speed
+            right_speed = 0.4 * right_speed
+            return left_speed, right_speed
+        except KeyError as e:
+            print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
+            return None, None     

@@ -27,22 +27,35 @@ def execute_command(node, left_speed, right_speed, duration):
     print("Movement completed.\n")
 
 def turn(node, degrees):
-    speed = 200
+        speed = 200
+        degrees = degrees % 360  # normalization
+        scaling_factor = 0.01 # empirical value
 
-    degrees = degrees%360 #normalization
-    
-    if degrees >= 180:
-        duration = 1.5 #TODO
-        execute_command(node, -speed, speed, duration)
+        if degrees >= 180:
+            duration = (degrees/90)*scaling_factor  
+            execute_command(speed, -speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
+        
 
-    elif degrees < 180:
-        duration = 1.5 #TODO
-        execute_command(node, speed, -speed, duration)
+        elif degrees < 180:
+            duration = (degrees/90)*scaling_factor
+            execute_command(-speed, speed, duration)
+            print(f"Turning {degrees} deg with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
 
-def move(node, duration):
-    speed = 200
-    #some scaling between pixels and mm?
-    execute_command(node, speed, speed, duration)
+def move(node, distance):
+        """
+        Move the robot forward for a given distance in millimeters.
+
+        :param distance: Distance to move in mm
+        """
+        speed = 200  # Motor speed
+        scaling_factor = 0.005  # empirical
+
+        # Calculate duration using the scaling factor
+        duration = distance * scaling_factor
+
+        print(f"Moving {distance} mm with a scaling factor of {scaling_factor}, calculated duration: {duration}s.")
+        execute_command(speed, speed, duration)
 
 
 
