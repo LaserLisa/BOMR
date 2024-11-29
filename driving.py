@@ -8,6 +8,7 @@ class Driving:
         self.max_wheel_speed = 0.7  # [revolution per second at 500]
         self.r_speed = 66 #[mm/s]
         self.l_speed = 66 #[mm/s]
+        self.time = 0 
         self.client = ClientAsync()
         self.client.process_waiting_messages()
         self.node = aw(self.client.wait_for_node())
@@ -30,7 +31,8 @@ class Driving:
             "motor.right.target": [right_speed],
         }
         self.r_speed = right_speed / 3 
-        self.l_speed = left_speed  / 3 
+        self.l_speed = left_speed  / 3
+        self.time = duration 
         aw(self.node.set_variables(v))
 
         # Wait for the specified duration
@@ -50,6 +52,10 @@ class Driving:
     def get_r_speeds (self):
         return self.r_speed 
 
+    def get_time (self):
+        return self.time
+
+    
     def turn(self, degrees):
         speed = 200
         degrees = degrees % 360  # normalization
