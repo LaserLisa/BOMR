@@ -43,20 +43,15 @@ def update_camera_and_kalman(cam: camera.Camera):
 
 
 
-def motion_control():
+def motion_control(driver: Driving, robot_pose: tuple):
     global running
     print("Starting motion_control thread")
-    while running:
-        try:
-            command = input(
-                "Enter command ('turn degrees' or 'move duration') or 'exit' to quit: "
-            ).strip()
-            if command.lower() == "exit":
-                print("Exiting program.")
-                running = False
-        except Exception as e:
-            print(f"Error in motion_control thread: {e}")
-            running = False
+    
+    (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
+    for i in range(len(checkpoints)):
+        driver.move_to_checkpoint(driver.x, driver.y, driver.dir, checkpoints[i][0], checkpoints[i][1])
+        
+    print("ITERATION COMPLETED ----------------------------------------------")
     print("motion_control thread exiting")
 
 
@@ -73,8 +68,13 @@ if __name__ == "__main__":
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
+    print(len(checkpoints))
+    #checkpoints = [goal]
     cam.set_checkpoints(checkpoints)
+
+    for val in checkpoints:
+        print(val, "\n")
 
     print("Initializing Thymio...")
     driver = Driving()
@@ -89,8 +89,11 @@ if __name__ == "__main__":
 
     # Start threads
     t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
-    t2 = threading.Thread(target=motion_control, daemon=True)
+    t2 = threading.Thread(target=motion_control, args=(driver, robot_pose_px), daemon=True)
 
+
+    
+    print("threads defined")
     t1.start()
     t2.start()
 
@@ -105,3 +108,8 @@ if __name__ == "__main__":
     print("OpenCV windows destroyed")
     driver.__del__()
     print("Driver released")
+    
+    print("Active threads after join:")
+    print(threading.enumerate())
+
+    print("all threads have completed")
