@@ -78,3 +78,22 @@ class Driving:
 
         self.turn(dir - pos_angle)
         self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
+
+
+    def get_motor_speeds(self):
+        """
+        Returns the current speeds of the left and right motors.
+        
+        Outputs:
+        - left_speed: Speed of the left motor
+        - right_speed: Speed of the right motor
+        """
+        try:
+            # Fetch motor speed values from Thymio's variables
+            left_speed = self.node["motor.left.target"]
+            right_speed = self.node["motor.right.target"]
+            return left_speed, right_speed
+        except KeyError as e:
+            print("Error: Unable to fetch motor speeds. Are the motor variables available?")
+            return None, None
+
