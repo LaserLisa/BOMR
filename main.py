@@ -4,6 +4,7 @@ from src.vision import camera
 import src.path_planning.path_planning as pp
 from src.filter.kalman_filter import Extended_Kalman_Filter
 from driving import Driving
+import time
 
 # Open the default camera
 print("Initalizing camera...")
@@ -31,6 +32,7 @@ driver = Driving()
 # EKF = Kalman_Filter.Extended_Kalman_Filter()
 # EKF.Sigma = np.eye(5) # confidence of EKF
 # EKF.Mu = [robot_pose_px[0],robot_pose_px[1],robot_pose_px[2],0,0] #initial values for position and orientation
+# EKF.old_time = time.time()
 # Wheel_Distance = 100
 # Scaling_Factor = 3
 
@@ -76,7 +78,7 @@ while True:
 
     # kalman filter, position in pixels and angle in radians 
     print(">>> Filtering")
-    EKF.dt = 0.2
+    EKF.update_dt(time.time())
     # get speeds in mm/s
     motor_values = (driving.get_motor_speeds(), Wheel_Distance, Scaling_Factor)
     EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
