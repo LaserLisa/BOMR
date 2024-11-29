@@ -42,34 +42,6 @@ while True:
     # else:
     # move towards next checkpoint
     # Get user input for the command
-    command = input("Enter command 5 coordinates: (pos_x, pos_y, pos_angle, check_x, check_y) or 'exit' to quit: ").strip()
-    if command.lower() == "exit":
-        print("Exiting program.")
-        break
-
-    # Parse the command
-    try:
-        pos_x, pos_y, pos_angle, check_x, check_y = command.split()
-        pos_x = int(pos_x)
-        pos_y = int(pos_y)
-        pos_angle = int(pos_angle)
-        check_x = int(check_x)
-        check_y = int(check_y)
-        driver.move_to_checkpoint(pos_x, pos_y, pos_angle, check_x, check_y)
-        '''
-        if command.startswith("turn"):
-            _, degrees = command.split()
-            degrees = int(degrees)
-            driver.turn(degrees)
-        elif command.startswith("move"):
-            _, duration = command.split()
-            duration = int(duration)
-            driver.move(duration)
-        else:
-            print("Invalid command. Use 'turn degrees' or 'move duration'.")
-        '''
-    except ValueError:
-        print("Invalid input. Please ensure the correct format for 'turn degrees' or 'move duration'.")
 
     # get robot pose
     cam.update(corners= False, obstacles_goal=False, show_all=False)
