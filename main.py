@@ -48,18 +48,18 @@ while True:
     robot_pose_px = cam.get_robot_pose()
 
     # kalman filter, position in pixels and angle in radians 
-    print(">>> Filtering")
-    EKF.update_time(time.time())
+    # print(">>> Filtering")
+    # EKF.update_time(time.time())
     # get speeds in mm/s
-    motor_values = (driver.get_speeds(), Wheel_Distance, Scaling_Factor)
-    EKF.extended_kalman([66, 0], EKF.system_state(robot_pose_px))
-    robot_pose_mm = ([EKF.Mu[0], EKF.Mu[1]], EKF.Mu[2])
-    print("Before Filter: ",robot_pose_px)
-    print("After Filter: ",robot_pose_mm)
+    # motor_values = (driver.get_speeds(), Wheel_Distance, Scaling_Factor)
+    # EKF.extended_kalman([66, 0], EKF.system_state(robot_pose_px))
+    # robot_pose_mm = ([EKF.Mu[0], EKF.Mu[1]], EKF.Mu[2])
+    # print("Before Filter: ",robot_pose_px)
+    # print("After Filter: ",robot_pose_mm)
 
 
     #reset filter 
-    EKF.Mu = [robot_pose_mm[0][0],robot_pose_mm[0][1],robot_pose_mm[1],0,0]
+    # EKF.Mu = [robot_pose_mm[0][0],robot_pose_mm[0][1],robot_pose_mm[1],0,0]
 
     # to display the current frame and the map
     cam.update(corners= False, obstacles_goal=False, show_all=False)
