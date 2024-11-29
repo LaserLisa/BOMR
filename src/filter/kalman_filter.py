@@ -29,7 +29,7 @@ class Extended_Kalman_Filter():
                      6.15,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
 
-    def update_time(self, time)
+    def update_time(self, time):
         '''
         Function that determines the amount of time in seconds since the last call of the kalman filter 
         Input: - time : time of execution of the EKF

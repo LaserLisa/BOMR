@@ -58,8 +58,8 @@ class Camera(cv2.VideoCapture):
         print(">>>initialize_map():\tcorners found, extracting obstacles...")
         self._extract_obstacles()
         while np.isnan(self._robot_position.value).all() or self._goal_position is None:
-            self._extract_goal()
-            self._extract_robot_pose()
+            self._extract_goal(show)
+            self._extract_robot_pose(show)
             self.read()
         self._init_map = True
 
