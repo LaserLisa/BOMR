@@ -31,7 +31,7 @@ driver = Driving()
 # print(">> Initializing filter") 
 # EKF = Kalman_Filter.Extended_Kalman_Filter()
 # EKF.Sigma = np.eye(5) # confidence of EKF
-# EKF.Mu = [robot_pose_px[0],robot_pose_px[1],robot_pose_px[2],0,0] #initial values for position and orientation
+# EKF.Mu = [robot_pose_px[0][0],robot_pose_px[0][1],robot_pose_px[1],0,0] #initial values for position and orientation
 # EKF.old_time = time.time()
 # Wheel_Distance = 100
 # Scaling_Factor = 3
@@ -82,9 +82,9 @@ while True:
     # get speeds in mm/s
     motor_values = (driving.get_motor_speeds(), Wheel_Distance, Scaling_Factor)
     EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
-    robot_pose_mm = (EKF.Mu[0], EKF.Mu[1]), EKF.Mu[2])
+    robot_pose_mm = ([EKF.Mu[0], EKF.Mu[1])], EKF.Mu[2])
     #reset filter 
-    EKF.Mu = [robot_pose_mm[0],robot_pose_mm[1],robot_pose_mm[2],0,0]
+    EKF.Mu = [robot_pose_mm[0][0],robot_pose_mm[0][1],robot_pose_mm[1],0,0]
 
     # to display the current frame and the map
     # cam.update(corners= False, obstacles_goal=False, show_all=False)
