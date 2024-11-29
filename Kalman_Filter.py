@@ -13,6 +13,7 @@ class Extended_Kalman_Filter():
         '''
         # Covariance for EKF simulation
         self.dt = 0.2     #[s]
+        self.old_time = 0
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = 3 #[mm/pxl]
         pxl_var = 0.25
@@ -28,6 +29,17 @@ class Extended_Kalman_Filter():
                      6.15,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
 
+    def update_time(self, time)
+        '''
+        Function that determines the amount of time in seconds since the last call of the kalman filter 
+        Input: - time : time of execution of the EKF
+        Output: - dt : change in time since last iteration 
+                - olt_time : save the value if the timer for next iteration 
+        '''
+        self.dt = time - self.old_time
+        self.old_time = time 
+        
+        
     def process_cov(self):
         '''
         Function that determines the current process noise covariance depending on scaling factor.
