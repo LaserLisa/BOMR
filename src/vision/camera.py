@@ -263,4 +263,4 @@ class Camera(cv2.VideoCapture):
             cv2.drawContours(warped, contours, -1, (0, 0, 0), 2)
             cv2.circle(warped, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
             cv2.imshow('goal', warped)
-        
+            cv2.waitKey(1)
