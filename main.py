@@ -82,6 +82,8 @@ while True:
     motor_values = (driver.get_speeds(), Wheel_Distance, Scaling_Factor)
     EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
     robot_pose_mm = ([EKF.Mu[0], EKF.Mu[1]], EKF.Mu[2])
+    print("Before Filter: ",robot_pose_px)
+    print("After Filter: ",robot_pose_mm)
 
 
     #reset filter 
