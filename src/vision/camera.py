@@ -212,11 +212,11 @@ class Camera(cv2.VideoCapture):
                                    self._hyperparams.obstacles.green,
                                    self._hyperparams.obstacles.red))
         
+        
         canny = cv2.Canny(thresholded, 94, 98, apertureSize=3)
         kernel = np.ones((self._hyperparams.obstacles.kernel_size, 
                           self._hyperparams.obstacles.kernel_size), np.uint8)
         morph = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, kernel, iterations=2)
-
         contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
         # filter controus where area < 1000
@@ -229,6 +229,8 @@ class Camera(cv2.VideoCapture):
             cv2.drawContours(warped, contours, -1, (0, 0, 255), 1)
             cv2.imshow('warped', warped)
         self._map = map
+
+        print('extract obstacles done')
 
 
     def _extract_goal(self, show_warped: bool = False):

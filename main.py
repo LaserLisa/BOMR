@@ -77,9 +77,9 @@ while True:
 
     # kalman filter, position in pixels and angle in radians 
     print(">>> Filtering")
-    EKF.update_dt(time.time())
+    EKF.update_time(time.time())
     # get speeds in mm/s
-    motor_values = (driving.get_motor_speeds(), Wheel_Distance, Scaling_Factor)
+    motor_values = (driver.get_motor_speeds(), Wheel_Distance, Scaling_Factor)
     EKF.extended_kalman(EKF.u_input(motor_values),EKF.system_state(robot_pose_px))
     robot_pose_mm = ([EKF.Mu[0], EKF.Mu[1]], EKF.Mu[2])
 
