@@ -1,10 +1,10 @@
 '''
-repeated_time.py
+Timer.py
 Module used to control the threading of some tasks of the robot
 '''
 from threading import Timer
 
-class RepeatedTimer(object):
+class Thymio_Timer(object):
     def __init__(self, interval, function, *args, **kwargs):
         self._timer     = None
         self.interval   = interval
