@@ -44,8 +44,11 @@ class Driving:
         aw(self.node.set_variables(v))
         print("Movement completed.\n")
 
-    def get_speeds (self):
-        return self.l_speed , self.r_speed
+    def get_l_speeds (self):
+        return self.l_speed 
+
+    def get_r_speeds (self):
+        return self.r_speed 
 
     def turn(self, degrees):
         speed = 200
