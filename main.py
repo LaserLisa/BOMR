@@ -10,24 +10,24 @@ import sys
 
 running = False
 
-def update_camera_and_kalman(cam: camera.Camera, ekf: Extended_Kalman_Filter):
+def update_camera_and_kalman(cam: camera.Camera):
     global running
-    global driver
+    # global driver
     print("Starting update_camera_and_kalman thread")
     while running:
         # Update the camera and perform filtering
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        ekf.dt = driver.get_time()
-        ekf.extended_kalman(
-            ekf.u_input(driver.get_l_speeds(), driver.get_r_speeds(), Wheel_Distance, Scaling_Factor),
-            ekf.system_state(robot_pose_px),
-        )
-        robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
+        # ekf.dt = driver.get_time()
+        # ekf.extended_kalman(
+        #     ekf.u_input(driver.get_l_speeds(), driver.get_r_speeds(), Wheel_Distance, Scaling_Factor),
+        #     ekf.system_state(robot_pose_px),
+        # )
+        # robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
 
-        # Reset filter
-        ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
+        # # Reset filter
+        # ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
 
         # Display the frame and map
         frame = cam.get_current_frame()
@@ -77,16 +77,16 @@ if __name__ == "__main__":
     print("Initializing Thymio...")
     driver = Driving()
 
-    print(">> Initializing filter")
-    ekf = Extended_Kalman_Filter()
-    ekf.Sigma = np.eye(5)
-    ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
-    ekf.old_time = time.time()
-    Wheel_Distance = 100
-    Scaling_Factor = 3
+    # print(">> Initializing filter")
+    # ekf = Extended_Kalman_Filter()
+    # ekf.Sigma = np.eye(5)
+    # ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
+    # ekf.old_time = time.time()
+    # Wheel_Distance = 100
+    # Scaling_Factor = 3
 
     # Start threads
-    t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ekf), daemon=True)
+    t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
     t2 = threading.Thread(target=motion_control, daemon=True)
 
 
