@@ -104,6 +104,9 @@ class Extended_Kalman_Filter():
                               1x5 vector that holds the current axis coordinates, angle,
                               velocity and angular velocity mesurements.
         '''
+        if (self.dt == 0):
+            self.dt = 1
+        
         y=np.zeros(5).T
         y[0] = robot_pose_px[0][0]
         y[1] = robot_pose_px[0][1]
