@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 class Extended_Kalman_Filter():
-    def __init__(self):
+    def __init__(self, pix2mm):
         '''
         Extended Kalman Filter Noise Covariance matrix.
         R is the measurement noise covariant matrix. It injects the standard deviation of correct thymio measurement localization
@@ -15,7 +15,8 @@ class Extended_Kalman_Filter():
         self.dt = 0.2     #[s]
         self.old_time = 0
         self.input_speed = 14 #[mm/s]
-        self.scaling_factor = 3 #[mm/pxl]
+        self.scaling_factor = pix2mm #[mm/pxl]
+        self.wheel_distance = 100
         pxl_var = 0.25
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
@@ -58,7 +59,7 @@ class Extended_Kalman_Filter():
                     ])
         return Q
 
-    def u_input(self,speed_l,speed_r, wheel_distance, scaling_factor):
+    def u_input(self,speed_l,speed_r):
         '''
         Function that takes the raw speed values of each wheel motor and converts it into
         translation speed and rotation speed with a pixel scaling factor.
@@ -71,7 +72,7 @@ class Extended_Kalman_Filter():
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
         v = self.scaling_factor * (speed_r + speed_l)/2
-        theta_dot = (speed_r - speed_l)/wheel_distance
+        theta_dot = (speed_r - speed_l)/self.wheel_distance
         u = np.array([v, theta_dot]).T
         return u
 

@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.vision import camera
 import src.path_planning.path_planning as pp
 from src.filter.kalman_filter import Extended_Kalman_Filter
-from driving import Driving
+from src.motion_control.driving import Driving
 
 MAP_SIZE_MM = [1050, 720]
 

@@ -1,15 +1,46 @@
 import cv2
 import numpy as np
+import time
+import threading
+
 from src.vision import camera
 import src.path_planning.path_planning as pp
 from src.filter.kalman_filter import Extended_Kalman_Filter
-from driving import Driving
-import time
-import threading
-import sys
+from src.motion_control.driving import Driving
 
 running = False
 DEBUG = False
+
+def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
+    print("Initializing camera...")
+    cam = camera.Camera(0, window_size=2)
+    pix2mm = cam.pixel2mm
+
+    print("Initializing map...")
+    cam.initialize_map(show=True, show_all=False)
+    
+    robot_pose_px = cam.get_robot_pose()
+    map = cam.get_map()
+    goal = cam.get_goal_position()
+    print("Getting checkpoints...")
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
+    print(checkpoints)
+    #checkpoints = [goal]
+    cam.set_checkpoints(checkpoints)
+
+    for val in checkpoints:
+        print(val, "\n")
+
+    print("Initializing Thymio...")
+    driver = Driving()
+
+    print(">> Initializing filter")
+    ekf = Extended_Kalman_Filter(pix2mm)
+    ekf.Sigma = np.eye(5)
+    ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
+    ekf.old_time = time.time()
+
+    return cam, driver, ekf, checkpoints
 
 def update_camera_and_kalman(cam: camera.Camera):
     global running
@@ -20,16 +51,17 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        # ekf.dt = driver.get_time()
-        # ekf.extended_kalman(
-        #     ekf.u_input(driver.get_l_speeds(), driver.get_r_speeds(), Wheel_Distance, Scaling_Factor),
-        #     ekf.system_state(robot_pose_px),
-        # )
-        # robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
+        ekf.update_time(time.time())
+        l_speed, r_speed = driver.get_l_speeds(), driver.get_r_speeds()
+        print(f"robot speed kalman: {l_speed}\t {r_speed}")
+        ekf.extended_kalman(
+            ekf.u_input(l_speed, r_speed),
+            ekf.system_state(robot_pose_px),
+        )
+        robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
 
-        # # Reset filter
-        # ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
-
+        # Reset filter
+        ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
         # Display the frame and map
         cam.display_map()
         if DEBUG:
@@ -43,53 +75,26 @@ def update_camera_and_kalman(cam: camera.Camera):
 
 
 
-def motion_control(driver: Driving, robot_pose: tuple):
+def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     global running
     print("Starting motion_control thread")
-    
+    robot_pose = camera.get_robot_pose()
     (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
     for i in range(len(checkpoints)):
         driver.move_to_checkpoint(driver.x, driver.y, driver.dir, checkpoints[i][0], checkpoints[i][1])
-        
+    
+    running = False
     print("ITERATION COMPLETED ----------------------------------------------")
     print("motion_control thread exiting")
 
 
 if __name__ == "__main__":
     running = True
-    print("Initializing camera...")
-    cam = camera.Camera(0, window_size=2)
-    pix2mm = cam.pixel2mm
-
-    print("Initializing map...")
-    cam.initialize_map(show=True, show_all=False)
-    
-    robot_pose_px = cam.get_robot_pose()
-    map = cam.get_map()
-    goal = cam.get_goal_position()
-    print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
-    print(len(checkpoints))
-    #checkpoints = [goal]
-    cam.set_checkpoints(checkpoints)
-
-    for val in checkpoints:
-        print(val, "\n")
-
-    print("Initializing Thymio...")
-    driver = Driving()
-
-    # print(">> Initializing filter")
-    # ekf = Extended_Kalman_Filter()
-    # ekf.Sigma = np.eye(5)
-    # ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
-    # ekf.old_time = time.time()
-    # Wheel_Distance = 100
-    # Scaling_Factor = 3
+    cam, driver, ekf, checkpoints = init()
 
     # Start threads
     t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
-    t2 = threading.Thread(target=motion_control, args=(driver, robot_pose_px), daemon=True)
+    t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints), daemon=True)
 
 
     
