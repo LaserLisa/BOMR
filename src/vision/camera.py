@@ -22,6 +22,7 @@ class Camera(cv2.VideoCapture):
         self._goal_position = None
         self._robot_position = Position(window_size)
         self._robot_orientation = Orientation(window_size)
+        self._checkpoints = None
         self._aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
         self._aruco_detector = cv2.aruco.ArucoDetector(self._aruco_dict, 
                                                        cv2.aruco.DetectorParameters())
@@ -37,7 +38,7 @@ class Camera(cv2.VideoCapture):
         """Returns current frame of camera"""
         return self._frame
     
-    def initialize_map(self, show: bool = True):
+    def initialize_map(self, show: bool = True, show_all: bool = False):
         """"
         Initializes the map by extracting the obstacles from
 
@@ -46,21 +47,30 @@ class Camera(cv2.VideoCapture):
         """
         t_start = time.time()
         # let the camera adjust to the light
-        print(">>>initialize_map():\tadjusting to light...")
+        print("\t\t>>>initialize_map():\tadjusting to light...")
         while time.time() - t_start < 1:
             self.read()
+            cv2.waitKey(1)
         while None in self._corners:
             self.read()
             self._find_corners(show)
         self._warped = perspective_transform(self._frame, self._corners,
                                             self._hyperparams.map_size[0],
                                             self._hyperparams.map_size[1])
-        print(">>>initialize_map():\tcorners found, extracting obstacles...")
-        self._extract_obstacles()
+        print("\t\t>>>initialize_map():\tcorners found, extracting obstacles...")
+        self._extract_obstacles(show_all)
+        print("\t\t>>>initialize_map():\textracting robot and goal position...")
         while np.isnan(self._robot_position.value).all() or self._goal_position is None:
-            self._extract_goal()
-            self._extract_robot_pose()
+            self._extract_goal(show_all)
+            self._extract_robot_pose(show_all)
             self.read()
+            self._warped = perspective_transform(self._frame, self._corners,
+                                            self._hyperparams.map_size[0],
+                                            self._hyperparams.map_size[1])
+            if show:
+                cv2.imshow('Camera', self._frame)
+                cv2.waitKey(1)
+        cv2.destroyWindow("Camera")
         self._init_map = True
 
     def update(self, corners: bool, obstacles_goal: bool, show_all: bool = False):
@@ -106,6 +116,20 @@ class Camera(cv2.VideoCapture):
             arrow_end_y = int(arrow_start_y - 10 * np.sin(angle))
             cv2.arrowedLine(overlay, (arrow_start_x, arrow_start_y), 
                             (arrow_end_x, arrow_end_y), color, 2)
+        
+        def draw_path(checkpoints):
+            # Draw checkpoints (as circles) on the image
+            for checkpoint in checkpoints:
+                cv2.circle(overlay, checkpoint, 5, (0, 0, 255), -1)  # Red circles for checkpoints
+
+            # Draw lines from checkpoint to checkpoint
+            for i in range(len(checkpoints) - 1):
+                start_point = checkpoints[i]
+                end_point = checkpoints[i + 1]
+                cv2.line(overlay, start_point, end_point, (0, 255, 0), 2)  # Green line
+        
+        if self._checkpoints:
+            draw_path(self._checkpoints)
 
         if pose_estimation:
             draw_robot(pose_estimation[0].astype(int), pose_estimation[1], (0, 255, 0))
@@ -136,6 +160,10 @@ class Camera(cv2.VideoCapture):
         """Returns the goal position"""
         return self._goal_position
     
+    def set_checkpoints(self, points):
+        """Sets the list of checkpoints"""
+        self._checkpoints = points
+
     def _extract_robot_pose(self, show: bool = False):
         """
         Extracts the robot pose from latest frame
@@ -212,11 +240,11 @@ class Camera(cv2.VideoCapture):
                                    self._hyperparams.obstacles.green,
                                    self._hyperparams.obstacles.red))
         
+        
         canny = cv2.Canny(thresholded, 94, 98, apertureSize=3)
         kernel = np.ones((self._hyperparams.obstacles.kernel_size, 
                           self._hyperparams.obstacles.kernel_size), np.uint8)
         morph = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, kernel, iterations=2)
-
         contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
         # filter controus where area < 1000
@@ -263,4 +291,4 @@ class Camera(cv2.VideoCapture):
             cv2.drawContours(warped, contours, -1, (0, 0, 0), 2)
             cv2.circle(warped, self._goal_position, 5, (255, 0, 0), cv2.FILLED)
             cv2.imshow('goal', warped)
-        
+            cv2.waitKey(1)

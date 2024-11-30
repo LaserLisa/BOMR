@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.vision.camera import Camera
 from src.vision.helpers import dump_yaml, read_yaml, Hyperparameters, Thresholds, object_to_dict
 CAMERA = True
-OBSTACLES = False
+OBSTACLES = True
 IMG_PATH = "test_map.jpg"
 
 def init_setting(param: Thresholds):
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         thresh = parameters.goal
     init_setting(thresh)
     if CAMERA:
-        cam = Camera(1)
+        cam = Camera(0)
     else:
         img = cv2.imread(IMG_PATH)
     while True:

@@ -76,7 +76,7 @@ def display_corners(img, corners):
 if __name__ == "__main__":
     # init_setting()
     if CAMERA:
-        cam = Camera(1)
+        cam = Camera(0)
         # while None in cam._corners:
         #     img = cam.get_current_frame()
         #     cam._find_corners()
