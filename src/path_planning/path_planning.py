@@ -40,7 +40,7 @@ def a_star(grid, start, goal):
         for dr, dc in directions:
             neighbor = (current[0] + dr, current[1] + dc)
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols and grid[neighbor[0]][neighbor[1]] == 0:
-                move_cost = 1.05 if dr != 0 and dc != 0 else 1
+                move_cost = 1.5 if dr != 0 and dc != 0 else 1
                 tentative_g = g_score[current] + move_cost
                 if neighbor not in g_score or tentative_g < g_score[neighbor]:
                     came_from[neighbor] = current
