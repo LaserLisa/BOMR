@@ -1,6 +1,6 @@
 from tdmclient import ClientAsync, aw
 import time
-from driving import Driving
+from project.src.motion_control.driving import Driving
 
 
 wheel_radius = 20 #[mm]
