@@ -8,6 +8,7 @@ from src.vision.camera import Camera
 from src.vision.helpers import dump_yaml, read_yaml, Hyperparameters, Thresholds, object_to_dict
 CAMERA = True
 OBSTACLES = True
+DEBUG = False
 IMG_PATH = "test_map.jpg"
 
 def init_setting(param: Thresholds):
@@ -39,7 +40,7 @@ def preprocess(img, params: Thresholds, obstacles: bool = True) -> Thresholds:
     x = img
 
     orig = x.copy()
-    if CAMERA:
+    if CAMERA and DEBUG:
         cv2.imwrite("testair.jpg", orig)
 
 
