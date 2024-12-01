@@ -73,7 +73,7 @@ class Extended_Kalman_Filter():
         Output: - u  : The current motor control values.
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
-        v = self.scaling_factor * (speed_r + speed_l)/2
+        v = (speed_r + speed_l)/2
         theta_dot = (speed_r - speed_l)/self.wheel_distance
         u = np.array([v, theta_dot]).T
         return u
@@ -152,6 +152,7 @@ class Extended_Kalman_Filter():
 
         Output: - G : 5x5 Jacobian matrix of thymio state function applied to input values
         '''
+        v = scaling_factor * v
         G = np.array([[1,0,-self.dt*v*math.sin(theta),self.dt*math.cos(theta),0],
                      [0,1, self.dt*v*math.cos(theta),self.dt*math.sin(theta),0],
                      [0,0,1,0,self.dt],
@@ -206,10 +207,9 @@ class Extended_Kalman_Filter():
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
 
-     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
+    def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
         self.dt = time
-        self.extended_kalman(ekf.u_input(l_speed, r_speed),
-                            ekf.system_state(robot_pose_px))
+        self.extended_kalman(self.u_input(l_speed, r_speed),self.system_state(robot_pose_px))
         x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
         robot_pose_mm = ([x, y], theta)
         return robot_pose_mm

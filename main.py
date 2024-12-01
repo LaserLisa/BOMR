@@ -28,9 +28,8 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    # checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
-    # print(checkpoints)
-    checkpoints = [goal]
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
+    print(checkpoints)
     cam.set_checkpoints(checkpoints)
 
     for val in checkpoints:
@@ -55,10 +54,12 @@ def update_camera_and_kalman(cam: camera.Camera):
         robot_pose_px = cam.get_robot_pose()
 
         l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
-        print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        # print("Filtering")
+        # print(f"robot speed kalman: {l_speed}\t {r_speed}")
+        #print("Filtering")
         robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
-
+        #if l_speed == -r_speed:
+           # print("px:", robot_pose_px)
+           # print("mm", robot_pose_mm)
        
         # Display the frame and map
         cam.display_map(robot_pose_mm)
@@ -79,19 +80,26 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     robot_pose = camera.get_robot_pose()
     (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
     state = 0
+
+    
     for i in range(len(checkpoints)):
-        if DEBUG:
-            print(f"Moving to checkpoint: {checkpoints[i]}")
+       # if DEBUG:
+          #  print(f"Moving to checkpoint: {checkpoints[i]}")
+        print(i)
         while not checkpoint_reached(checkpoints[i], robot_pose[0]):
             if obstacle_detected():
                 state = 1
             if state == 0: # global nav
+                # print(f"moving to checkpoint")
+                print(robot_pose)
+                print(checkpoints[i])
                 driver.move_to_checkpoint(robot_pose, checkpoints[i])
             elif state == 1: # local nav
                 # use proximity sensor inputs to avoid obstacles
                 ...
             # update robot pose by vision + kalman
             robot_pose = camera.get_robot_pose()
+    
 
     
     running = False

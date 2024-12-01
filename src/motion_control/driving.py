@@ -2,6 +2,7 @@ from tdmclient import ClientAsync, aw
 import time
 import math
 import numpy as np
+import asyncio
 
 class Driving:
     def __init__(self):
@@ -19,6 +20,39 @@ class Driving:
         self.x = 0
         self.y = 0
         self.dir = 0
+        self.prox = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
+        self.sensor_scale = 200  # Scale of the proximity sensors
+        aw(self.initialize_node_listeners())
+
+    async def initialize_node_listeners(self):
+        # Watch for variable changes
+        await self.node.watch(variables=True)
+
+        # Add listener for proximity sensor changes
+        self.node.add_variables_changed_listener(self.on_variables_changed) 
+
+    def on_variables_changed(self, node, variables):
+        """
+        Callback function to handle variable updates.
+        Updates proximity sensor values when 'prox.horizontal' changes.
+        """
+        try:
+            if "prox.horizontal" in variables:
+                self.prox = list(variables["prox.horizontal"])
+        except KeyError:
+            pass
+ 
+    async def get_prox_horizontal(self):
+        """
+        Returns the latest front horizontal proximity sensor values.
+
+        Outputs:
+        - prox_horizontal: List of the front 5 horizontal proximity sensor values
+        """
+        await self.client.sleep(0.1)  # Wait for the latest values to be updated
+        print(f"Returning proximity sensor values: {self.prox}")
+        self.prox = [self.prox[0] // self.sensor_scale, self.prox[1] // self.sensor_scale, self.prox[2] // self.sensor_scale, self.prox[3] // self.sensor_scale, self.prox[4] // self.sensor_scale]
+        return self.prox
 
     def __del__(self):
         aw(self.node.lock())
@@ -60,7 +94,6 @@ class Driving:
     def get_time (self):
         return self.time
 
-    
     def turn(self, angle):
         speed = 200
         scaling_factor = 0.73 # empirical value
@@ -75,7 +108,7 @@ class Driving:
             duration = abs((angle)*scaling_factor)
             self.execute_command(speed, -speed, duration)
             print(f"Turning {angle} rad")
-    
+
     def move(self, distance):
         """
         Move the robot forward for a given distance in millimeters.
@@ -109,6 +142,7 @@ class Driving:
         dy = robot_pose[0][1] - checkpoint[1]
         
         dir = np.arctan2(dy, dx)
+        print(f"dir = {dir}")
 
         angle = dir - robot_pose[1]
         print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
@@ -119,15 +153,14 @@ class Driving:
         # self.turn(dir - robot_pose[1])
         # self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
         # print(f"sending speeds: {l_speed}, {r_speed}")
-        v = {
-            "motor.left.target": [int(l_speed)],
-            "motor.right.target": [int(r_speed)],
-        }
-        aw(self.node.set_variables(v))
+        # v = {
+        #     "motor.left.target": [int(l_speed)],
+        #     "motor.right.target": [int(r_speed)],
+        # }
+        # aw(self.node.set_variables(v))
         self.dir = dir
         self.x = checkpoint[0]
         self.y = checkpoint[1]
-
 
     def get_motor_speeds(self):
         """
@@ -150,4 +183,3 @@ class Driving:
     # except KeyError as e:
         # print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
         # return None, None
-
