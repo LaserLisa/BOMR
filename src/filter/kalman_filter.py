@@ -18,6 +18,7 @@ class Extended_Kalman_Filter():
         self.scaling_factor = pix2mm #[mm/pxl]
         self.wheel_distance = 100
         pxl_var = 0.25
+        self.Sigma = np.eye(5)  # Initialize covariance matrix
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
                     0,         # variance of yaw angle          in rad^2
@@ -35,7 +36,7 @@ class Extended_Kalman_Filter():
         Function that determines the amount of time in seconds since the last call of the kalman filter 
         Input: - time : time of execution of the EKF
         Output: - dt : change in time since last iteration 
-                - olt_time : save the value if the timer for next iteration 
+                - olt_time : save the value of the timer for next iteration 
         '''
         self.dt = time - self.old_time
         self.old_time = time 
@@ -196,3 +197,8 @@ class Extended_Kalman_Filter():
         Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
+
+     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
+        self.dt = time
+        self.extended_kalman(ekf.u_input(l_speed, r_speed),
+                            ekf.system_state(robot_pose_px),
