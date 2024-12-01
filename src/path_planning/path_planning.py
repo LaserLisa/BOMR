@@ -246,7 +246,7 @@ def get_checkpoints(map, start, goal, px2mm):
 
     checkpoints = visibility_graph_simple(checkpoints, smaller_inflated_grid)
 
-    plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    # plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
 # map_shape = (240, 350)

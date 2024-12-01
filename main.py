@@ -11,12 +11,8 @@ from src.motion_control.helpers import checkpoint_reached
 import src.motion_control.local_navigation as ln
 
 running = False        # global variable to enable disable threads
-DEBUG = False          # global variable to enable/disable debug messages
-obst = [0, 0, 0, 0, 0] # global variable to store obstacle measurements
+DEBUG = True          # global variable to enable/disable debug messages
 state = 0              # global variable to store the state of the navigation: "global"=0 or "local"=1
-w_l = [20,  10, -10, -10, -20] # weights for the left motor
-w_r = [-20, -10, -10,  10,  20] # weights for the right motor
-
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
     cam = camera.Camera(0, window_size=2)
@@ -78,24 +74,27 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     global running, state, obst
     print("Starting motion_control thread")
     robot_pose = camera.get_robot_pose()
-    (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
 
     for i in range(len(checkpoints)):
-       # if DEBUG:
-          #  print(f"Moving to checkpoint: {checkpoints[i]}")
-        print(i)
+        if DEBUG:
+           print(f"Moving to checkpoint: {checkpoints[i]}")
+
         while not checkpoint_reached(checkpoints[i], robot_pose[0]):
             # Check if the navigation state should be switched
-            state = ln.get_navigation_state()
+            state, obst = ln.get_navigation_state(driver, state)
 
+            if DEBUG:
+                print(f"State: {state}\r", end="")
             if state == 0: #global navigation
                 driver.move_to_checkpoint(robot_pose, checkpoints[i])
             else: #local navigation
-                motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst, w_l, w_r)
+                motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst)
                 driver.set_motor_speeds(motor_left_speed, motor_right_speed)
 
             # update robot pose by vision + kalman
             robot_pose = camera.get_robot_pose()
+        if DEBUG:
+            print(f"Checkpoint {i} reached")
     
 
     

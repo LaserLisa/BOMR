@@ -51,7 +51,7 @@ class Driving:
         - prox_horizontal: List of the front 5 horizontal proximity sensor values
         """
         await self.client.sleep(0.1)  # Wait for the latest values to be updated
-        print(f"Returning proximity sensor values: {self.prox}")
+        # print(f"Returning proximity sensor values: {self.prox}")
         self.prox = [self.prox[0] // self.sensor_scale, self.prox[1] // self.sensor_scale, self.prox[2] // self.sensor_scale, self.prox[3] // self.sensor_scale, self.prox[4] // self.sensor_scale]
         return self.prox
 
@@ -103,7 +103,7 @@ class Driving:
         :param right_speed: Speed of the right motor
         """
 
-        print(f"Setting motor speeds: Left = {left_speed}, Right = {right_speed}")
+        # print(f"Setting motor speeds: Left = {left_speed}, Right = {right_speed}")
         v = {
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
@@ -158,10 +158,9 @@ class Driving:
         dy = robot_pose[0][1] - checkpoint[1]
         
         dir = np.arctan2(dy, dx)
-        print(f"dir = {dir}")
 
         angle = dir - robot_pose[1]
-        print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
+        # print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
         P = 60
         l_speed = 100 - P * angle
         r_speed = 100 + P * angle

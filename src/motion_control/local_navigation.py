@@ -5,7 +5,7 @@ obstThrH = 20          # high obstacle threshold to switch state global->local (
 w_l = [20,  10, -10, -10, -20] # weights for the left motor
 w_r = [-20, -10, -10,  10,  20] # weights for the right motor
 
-def get_navigation_state(obst, driver, state):
+def get_navigation_state(driver, state):
     """
     Update the navigation state based on the proximity sensor values.
     Args:
@@ -20,14 +20,12 @@ def get_navigation_state(obst, driver, state):
     if state == 1:
         if obst[0] < obstThrL and obst[1] < obstThrL and obst[2] < obstThrL and obst[3] < obstThrL and obst[4] < obstThrL:
             current_state = 0
-            print("Switching to global navigation: No detected obstacle anymore..")
     elif state == 0:
         if obst[0] > obstThrH or obst[1] > obstThrH or obst[2] > obstThrH or obst[3] > obstThrH or obst[4] > obstThrH:
             current_state = 1
-            print("Switching to local navigation: Obstacle detected..")
-    return current_state
+    return current_state, obst
 
-def calculate_new_motor_speed(obst, w_l, w_r):
+def calculate_new_motor_speed(obst):
     """
     Calculate the new motor speeds based on the proximity sensor values and the weights for the left and right motor.
     Args:
@@ -38,7 +36,6 @@ def calculate_new_motor_speed(obst, w_l, w_r):
         motor_left_target (int): New motor speed for the left motor.
         motor_right_target (int): New motor speed for the right motor.
     """
-    global w_l, w_r
     y = [0, 0]
     for i in range(len(obst)):
         y[0] = y[0] + w_l[i] * obst[i]

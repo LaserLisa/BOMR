@@ -5,8 +5,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.vision import camera
-import src.path_planning.path_planning as pp
-from src.filter.kalman_filter import Extended_Kalman_Filter
 from src.vision.measurements import Position, Orientation
 
 MAP_SIZE_MM = [1050, 720]
@@ -20,7 +18,7 @@ destination_points = np.array([
     ], dtype="float32")
 # Open the default camera
 print("Initalizing camera...")
-cam = camera.Camera(1, pixel2mm=3)
+cam = camera.Camera(1)
 pix2mm = MAP_SIZE_MM[0]/cam._hyperparams.map_size[0]
 
 print("Intializing map...")
