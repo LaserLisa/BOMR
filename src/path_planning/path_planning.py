@@ -64,7 +64,7 @@ def inflate_obstacles(grid, robot_radius):
     return inflated_grid
 
 def inflate_borders(grid, robot_width):
-    rows, cols = grid.shape
+    (rows, cols) = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
         for c in range(cols):
@@ -102,7 +102,7 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     # Plot checkpoints
     if checkpoints:
         for r, c in checkpoints:
-            ax.scatter(c, r, c="orange", s=50)
+            ax.scatter(r, c, c="orange", s=50)
 
     # Add row and column labels at intervals of 20
     for x in range(0, cols, 20):
@@ -143,24 +143,24 @@ def get_checkpoints(map, start, goal, px2mm):
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
             checkpoints.append([path[i][1], path[i][0]])
 
-    # plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
 
 # map_shape = (240, 350)
 # grid = np.zeros(map_shape)
 # grid[100:150, 50:80] = 1  # Example obstacle
-
+# 
 # start = np.array([252.0, 110.5])  # Note: x and y will be swapped
 # goal = np.array([52, 190])
-
+# 
 # robot_width = 12
 # robot_radius = robot_width // 2
-
+# 
 # inflated_grid = inflate_obstacles(grid, robot_radius)
 # inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
-
+# 
 # path = a_star(inflated_grid, start, goal)
-# checkpoints = get_checkpoints(path)
-
+# checkpoints = get_checkpoints(path, start, goal, 3.0)
+# 
 # plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)
