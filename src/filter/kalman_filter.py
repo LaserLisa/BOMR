@@ -187,15 +187,22 @@ class Extended_Kalman_Filter():
         Mu_pred = self.Get_Mu_pred(u, Q, self.dt, self.Mu)
         G = self.jacobian_G(self.Mu[2], u[0])
         Sigma_pred = np.dot(G,np.dot(self.Sigma,G.T)) + Q
-
-        #Calculate Kalman Gain
-        H = np.eye(5)  #technically jacobian of h(x), the camera measurements function
-        S = np.dot(np.dot(H,Sigma_pred),H.T) + self.R
-        K = np.dot(Sigma_pred,np.dot(H.T,np.linalg.inv(S)))
-
-        #Update Estimated values
-        Mu_est = Mu_pred + np.dot(K,(y - self.measure_state(Mu_pred)))
-        Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
+        
+        # Check if the camera measurement is valid (i.e., no NaN values)
+        if np.isnan(y).any():
+            #print("Camera measurement unavailable, skipping update step.")
+            # Skip the measurement update step and only return the prediction
+            Mu_est = Mu_pred  # No update to the state from the camera
+            Sigma_est = Sigma_pred  # No update to the covariance
+        else: 
+            #Calculate Kalman Gain
+            H = np.eye(5)  #technically jacobian of h(x), the camera measurements function
+            S = np.dot(np.dot(H,Sigma_pred),H.T) + self.R
+            K = np.dot(Sigma_pred,np.dot(H.T,np.linalg.inv(S)))
+        
+            #Update Estimated values
+            Mu_est = Mu_pred + np.dot(K,(y - self.measure_state(Mu_pred)))
+            Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
 
