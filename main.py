@@ -15,6 +15,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
     cam = camera.Camera(0, window_size=2)
     pix2mm = cam.pixel2mm
+    print(pix2mm)
 
     print("Initializing map...")
     cam.initialize_map(show=True, show_all=False)
@@ -62,7 +63,7 @@ def update_camera_and_kalman(cam: camera.Camera):
             cv2.imshow("Camera", frame)
         cv2.waitKey(1)
 
-        # time.sleep(0.01)  # Prevent excessive CPU usage
+        # time.sleep(0.01)
 
     print("update_camera_and_kalman thread exiting")
 
