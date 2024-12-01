@@ -106,14 +106,12 @@ class Driving:
         if np.isnan(robot_pose[0]).any():
             return
         dx = checkpoint[0] - robot_pose[0][0]
-        dy = checkpoint[1] - robot_pose[0][1]
+        dy = robot_pose[0][1] - checkpoint[1]
         
         dir = np.arctan2(dy, dx)
 
         angle = dir - robot_pose[1]
-        print(f"angle error: {np.degrees(angle)}")
-        print(f"dir error: {np.degrees(dir)}", end="")
-        angle = angle if abs(angle) > np.deg2rad(20) else 0
+        print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
         P = 60
         l_speed = 100 - P * angle
         r_speed = 100 + P * angle
