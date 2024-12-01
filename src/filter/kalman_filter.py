@@ -202,4 +202,7 @@ class Extended_Kalman_Filter():
         self.dt = time
         self.extended_kalman(ekf.u_input(l_speed, r_speed),
                             ekf.system_state(robot_pose_px))
+        x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
+        robot_pose_mm = ([x, y], theta)
+        return robot_pose_mm
          
