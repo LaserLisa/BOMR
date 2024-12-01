@@ -152,6 +152,7 @@ class Extended_Kalman_Filter():
 
         Output: - G : 5x5 Jacobian matrix of thymio state function applied to input values
         '''
+        v = scaling_factor * v
         G = np.array([[1,0,-self.dt*v*math.sin(theta),self.dt*math.cos(theta),0],
                      [0,1, self.dt*v*math.cos(theta),self.dt*math.sin(theta),0],
                      [0,0,1,0,self.dt],
