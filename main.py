@@ -34,9 +34,9 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing Thymio...")
     driver = Driving()
 
-    print(">> Initializing filter")
-    ekf = Extended_Kalman_Filter(pix2mm)
-    ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
+    print("Initializing filter")
+    ekf = Extended_Kalman_Filter(pix2mm, robot_pose_px)
+    
 
     return cam, driver, ekf, checkpoints
 
@@ -51,8 +51,8 @@ def update_camera_and_kalman(cam: camera.Camera):
 
         l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
         print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
-        robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
+        # print("Filtering")
+        robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
 
        
         # Display the frame and map
