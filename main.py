@@ -36,9 +36,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
 
     print(">> Initializing filter")
     ekf = Extended_Kalman_Filter(pix2mm)
-    ekf.Sigma = np.eye(5)
     ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
-    ekf.old_time = time.time()
 
     return cam, driver, ekf, checkpoints
 
@@ -51,17 +49,14 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        ekf.update_time(time.time())
-        l_speed, r_speed = driver.get_l_speeds(), driver.get_r_speeds()
+        l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
         print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        ekf.extended_kalman(
-            ekf.u_input(l_speed, r_speed),
-            ekf.system_state(robot_pose_px),
-        )
+        ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
         robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
 
         # Reset filter
         ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
+        
         # Display the frame and map
         cam.display_map()
         if DEBUG:
