@@ -106,26 +106,36 @@ class Driving:
         if np.isnan(robot_pose[0]).any():
             return
         dx = checkpoint[0] - robot_pose[0][0]
-        dy = checkpoint[1] - robot_pose[0][1]
-        
+        dy = robot_pose[0][1] - checkpoint[1] 
+
+        print(f"dx = {dx}")
+        print(f"dy = {dy}")
+
+        print(f"robot_pose[1] = {robot_pose[1]}")
         dir = np.arctan2(dy, dx)
+        print(f"dir = {dir}")
 
         angle = dir - robot_pose[1]
-        print(f"angle error: {np.degrees(angle)}")
-        print(f"dir error: {np.degrees(dir)}", end="")
-        angle = angle if abs(angle) > np.deg2rad(20) else 0
-        P = 60
-        l_speed = 100 - P * angle
-        r_speed = 100 + P * angle
-        # distance = np.linalg.norm([dx, dy])
-        # self.turn(dir - robot_pose[1])
-        # self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
+        print(f"angle = {angle}")
+        # print(f"angle error: {np.degrees(angle)}")
+        # print(f"dir error: {np.degrees(dir)}", end="")
+        # angle = angle if abs(angle) > np.deg2rad(20) else 0
+        # P = 60
+        # l_speed = 100 - P * angle
+        # r_speed = 100 + P * angle
+        distance = np.linalg.norm([dx, dy])
+        print(f"distance px = {distance}")
+        print(f"distance mm = {self.px_to_mm(distance)}")
+
+        print(f"calling turn(angle) and move(self.px_to_mm(distance))")
+        self.turn(angle)
+        self.move(self.px_to_mm(distance))
         # print(f"sending speeds: {l_speed}, {r_speed}")
-        v = {
-            "motor.left.target": [int(l_speed)],
-            "motor.right.target": [int(r_speed)],
-        }
-        aw(self.node.set_variables(v))
+        # v = {
+        #     "motor.left.target": [int(l_speed)],
+        #     "motor.right.target": [int(r_speed)],
+        # }
+        # aw(self.node.set_variables(v))
         self.dir = dir
         self.x = checkpoint[0]
         self.y = checkpoint[1]
