@@ -169,11 +169,11 @@ class Driving:
         # self.turn(dir - robot_pose[1])
         # self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
         # print(f"sending speeds: {l_speed}, {r_speed}")
-        # v = {
-        #     "motor.left.target": [int(l_speed)],
-        #     "motor.right.target": [int(r_speed)],
-        # }
-        # aw(self.node.set_variables(v))
+        v = {
+            "motor.left.target": [int(l_speed)],
+            "motor.right.target": [int(r_speed)],
+        }
+        aw(self.node.set_variables(v))
         self.dir = dir
         self.x = checkpoint[0]
         self.y = checkpoint[1]

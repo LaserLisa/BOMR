@@ -14,7 +14,8 @@ running = False        # global variable to enable disable threads
 DEBUG = False          # global variable to enable/disable debug messages
 obst = [0, 0, 0, 0, 0] # global variable to store obstacle measurements
 state = 0              # global variable to store the state of the navigation: "global"=0 or "local"=1
-
+w_l = [20,  10, -10, -10, -20] # weights for the left motor
+w_r = [-20, -10, -10,  10,  20] # weights for the right motor
 
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
@@ -54,16 +55,16 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
-        # print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        #print("Filtering")
-        robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
-        #if l_speed == -r_speed:
+        # l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
+        # # print(f"robot speed kalman: {l_speed}\t {r_speed}")
+        # #print("Filtering")
+        # robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
+        # #if l_speed == -r_speed:
            # print("px:", robot_pose_px)
            # print("mm", robot_pose_mm)
        
         # Display the frame and map
-        cam.display_map(robot_pose_mm)
+        cam.display_map()
         if DEBUG:
             frame = cam.get_current_frame()
             cv2.imshow("Camera", frame)
