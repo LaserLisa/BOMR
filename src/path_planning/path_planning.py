@@ -182,6 +182,7 @@ def is_visible(point1, point2, inflated_grid):
 def visibility_graph_simple(checkpoints, inflated_grid):
     """
     Removes checkpoints that are redundant because their two neighbors can directly see each other.
+    Already skipped checkpoints are not reconsidered.
 
     Args:
         checkpoints (list): List of checkpoints as [x, y] pairs.
@@ -190,20 +191,25 @@ def visibility_graph_simple(checkpoints, inflated_grid):
     Returns:
         list: Updated list of checkpoints with redundant ones removed.
     """
-    def can_skip(index):
-        """Check if the current checkpoint can be skipped."""
-        if index == 0 or index == len(checkpoints) - 1:
-            return False  # First and last checkpoints cannot be removed
-        prev, current, next_ = checkpoints[index - 1], checkpoints[index], checkpoints[index + 1]
-        return is_visible(prev, next_, inflated_grid)
+    # Work with a copy of the checkpoints list to avoid modifying the original list
+    filtered_checkpoints = checkpoints[:]
+    i = 1  # Start with the second checkpoint
 
-    # Filter checkpoints by removing those that can be skipped
-    filtered_checkpoints = []
-    for i in range(len(checkpoints)):
-        if not can_skip(i):  # Only keep checkpoints that cannot be skipped
-            filtered_checkpoints.append(checkpoints[i])
+    while i < len(filtered_checkpoints) - 1:
+        prev = filtered_checkpoints[i - 1]
+        current = filtered_checkpoints[i]
+        next_ = filtered_checkpoints[i + 1]
+
+        # Check if the current checkpoint can be skipped
+        if is_visible(prev, next_, inflated_grid):
+            # Remove the current checkpoint
+            filtered_checkpoints.pop(i)
+        else:
+            # Move to the next checkpoint
+            i += 1
 
     return filtered_checkpoints
+
 
 
 
@@ -214,13 +220,15 @@ def get_checkpoints(map, start, goal, px2mm):
     
     # transform cm to px
     robot_radius = int(robot_radius*10/px2mm)
+    print(f"robot_radius: {robot_radius}")
+    print(f"robot_radius: {robot_radius-5}")
 
     # Inflate the obstacles
     inflated_grid = inflate_obstacles(map, robot_radius)
     inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
 
-    smaller_inflated_grid = inflate_obstacles(map, robot_radius-3)
-    smaller_inflated_grid = inflate_borders(inflated_grid, robot_radius - 4)
+    smaller_inflated_grid = inflate_obstacles(map, robot_radius-1)
+    smaller_inflated_grid = inflate_borders(smaller_inflated_grid, robot_radius-1)
     
 
     # Run A* algorithm on the inflated grid
@@ -238,7 +246,7 @@ def get_checkpoints(map, start, goal, px2mm):
 
     checkpoints = visibility_graph_simple(checkpoints, smaller_inflated_grid)
 
-    plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
 # map_shape = (240, 350)
