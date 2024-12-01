@@ -7,6 +7,7 @@ import numpy as np
 import heapq
 import matplotlib.pyplot as plt
 
+
 def a_star(grid, start, goal):
     rows, cols = grid.shape
     directions = [
@@ -118,6 +119,94 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     ax.legend()
     plt.show()
 
+
+def bresenham_line(x1, y1, x2, y2):
+    """
+    Generate all the points on a straight line between two points using Bresenham's algorithm.
+    
+    Args:
+        x1, y1 (int): Coordinates of the start point.
+        x2, y2 (int): Coordinates of the end point.
+    
+    Returns:
+        list: List of (x, y) tuples representing the line.
+    """
+    points = []
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+    sx = 1 if x1 < x2 else -1
+    sy = 1 if y1 < y2 else -1
+    err = dx - dy
+
+    while True:
+        points.append((x1, y1))
+        if x1 == x2 and y1 == y2:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x1 += sx
+        if e2 < dx:
+            err += dx
+            y1 += sy
+
+    return points
+
+
+def is_visible(point1, point2, inflated_grid):
+    """
+    Check if there is visibility between two points, ensuring no pixels along the line
+    belong to inflated obstacles.
+    
+    Args:
+        point1 (list or tuple): Coordinates of the first point [x, y].
+        point2 (list or tuple): Coordinates of the second point [x, y].
+        inflated_grid (numpy.ndarray): Inflated grid where obstacles are marked as 1.
+    
+    Returns:
+        bool: True if the line is clear, False otherwise.
+    """
+    x1, y1 = map(int, point1)
+    x2, y2 = map(int, point2)
+
+    # Get all points on the line
+    line_points = bresenham_line(x1, y1, x2, y2)
+
+    # Check if any point on the line intersects an obstacle
+    for x, y in line_points:
+        if 0 <= y < inflated_grid.shape[0] and 0 <= x < inflated_grid.shape[1]:
+            if inflated_grid[y, x] == 1:
+                return False
+    return True
+
+def visibility_graph_simple(checkpoints, inflated_grid):
+    """
+    Removes checkpoints that are redundant because their two neighbors can directly see each other.
+
+    Args:
+        checkpoints (list): List of checkpoints as [x, y] pairs.
+        inflated_grid (numpy.ndarray): Inflated grid where obstacles are marked as 1.
+
+    Returns:
+        list: Updated list of checkpoints with redundant ones removed.
+    """
+    def can_skip(index):
+        """Check if the current checkpoint can be skipped."""
+        if index == 0 or index == len(checkpoints) - 1:
+            return False  # First and last checkpoints cannot be removed
+        prev, current, next_ = checkpoints[index - 1], checkpoints[index], checkpoints[index + 1]
+        return is_visible(prev, next_, inflated_grid)
+
+    # Filter checkpoints by removing those that can be skipped
+    filtered_checkpoints = []
+    for i in range(len(checkpoints)):
+        if not can_skip(i):  # Only keep checkpoints that cannot be skipped
+            filtered_checkpoints.append(checkpoints[i])
+
+    return filtered_checkpoints
+
+
+
 def get_checkpoints(map, start, goal, px2mm):
     # Define robot size
     robot_width = 12
@@ -129,6 +218,10 @@ def get_checkpoints(map, start, goal, px2mm):
     # Inflate the obstacles
     inflated_grid = inflate_obstacles(map, robot_radius)
     inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
+
+    smaller_inflated_grid = inflate_obstacles(map, robot_radius-3)
+    smaller_inflated_grid = inflate_borders(inflated_grid, robot_radius - 4)
+    
 
     # Run A* algorithm on the inflated grid
     path = a_star(inflated_grid, start, goal)
@@ -143,9 +236,10 @@ def get_checkpoints(map, start, goal, px2mm):
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
             checkpoints.append([path[i][1], path[i][0]])
 
+    checkpoints = visibility_graph_simple(checkpoints, smaller_inflated_grid)
+
     plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
-
 
 # map_shape = (240, 350)
 # grid = np.zeros(map_shape)
