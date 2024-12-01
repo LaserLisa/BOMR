@@ -73,7 +73,7 @@ class Extended_Kalman_Filter():
         Output: - u  : The current motor control values.
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
-        v = self.scaling_factor * (speed_r + speed_l)/2
+        v = (speed_r + speed_l)/2
         theta_dot = (speed_r - speed_l)/self.wheel_distance
         u = np.array([v, theta_dot]).T
         return u
