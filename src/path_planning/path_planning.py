@@ -7,6 +7,7 @@ import numpy as np
 import heapq
 import matplotlib.pyplot as plt
 
+
 def a_star(grid, start, goal):
     rows, cols = grid.shape
     directions = [
@@ -64,7 +65,7 @@ def inflate_obstacles(grid, robot_radius):
     return inflated_grid
 
 def inflate_borders(grid, robot_width):
-    rows, cols = grid.shape
+    (rows, cols) = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
         for c in range(cols):
@@ -102,7 +103,7 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     # Plot checkpoints
     if checkpoints:
         for r, c in checkpoints:
-            ax.scatter(c, r, c="orange", s=50)
+            ax.scatter(r, c, c="orange", s=50)
 
     # Add row and column labels at intervals of 20
     for x in range(0, cols, 20):
@@ -118,6 +119,100 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     ax.legend()
     plt.show()
 
+
+def bresenham_line(x1, y1, x2, y2):
+    """
+    Generate all the points on a straight line between two points using Bresenham's algorithm.
+    
+    Args:
+        x1, y1 (int): Coordinates of the start point.
+        x2, y2 (int): Coordinates of the end point.
+    
+    Returns:
+        list: List of (x, y) tuples representing the line.
+    """
+    points = []
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+    sx = 1 if x1 < x2 else -1
+    sy = 1 if y1 < y2 else -1
+    err = dx - dy
+
+    while True:
+        points.append((x1, y1))
+        if x1 == x2 and y1 == y2:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x1 += sx
+        if e2 < dx:
+            err += dx
+            y1 += sy
+
+    return points
+
+
+def is_visible(point1, point2, inflated_grid):
+    """
+    Check if there is visibility between two points, ensuring no pixels along the line
+    belong to inflated obstacles.
+    
+    Args:
+        point1 (list or tuple): Coordinates of the first point [x, y].
+        point2 (list or tuple): Coordinates of the second point [x, y].
+        inflated_grid (numpy.ndarray): Inflated grid where obstacles are marked as 1.
+    
+    Returns:
+        bool: True if the line is clear, False otherwise.
+    """
+    x1, y1 = map(int, point1)
+    x2, y2 = map(int, point2)
+
+    # Get all points on the line
+    line_points = bresenham_line(x1, y1, x2, y2)
+
+    # Check if any point on the line intersects an obstacle
+    for x, y in line_points:
+        if 0 <= y < inflated_grid.shape[0] and 0 <= x < inflated_grid.shape[1]:
+            if inflated_grid[y, x] == 1:
+                return False
+    return True
+
+def visibility_graph_simple(checkpoints, inflated_grid):
+    """
+    Removes checkpoints that are redundant because their two neighbors can directly see each other.
+    Already skipped checkpoints are not reconsidered.
+
+    Args:
+        checkpoints (list): List of checkpoints as [x, y] pairs.
+        inflated_grid (numpy.ndarray): Inflated grid where obstacles are marked as 1.
+
+    Returns:
+        list: Updated list of checkpoints with redundant ones removed.
+    """
+    # Work with a copy of the checkpoints list to avoid modifying the original list
+    filtered_checkpoints = checkpoints[:]
+    i = 1  # Start with the second checkpoint
+
+    while i < len(filtered_checkpoints) - 1:
+        prev = filtered_checkpoints[i - 1]
+        current = filtered_checkpoints[i]
+        next_ = filtered_checkpoints[i + 1]
+
+        # Check if the current checkpoint can be skipped
+        if is_visible(prev, next_, inflated_grid):
+            # Remove the current checkpoint
+            filtered_checkpoints.pop(i)
+        else:
+            # Move to the next checkpoint
+            i += 1
+
+    return filtered_checkpoints
+
+
+
+
 def get_checkpoints(map, start, goal, px2mm):
     # Define robot size
     robot_width = 12
@@ -125,10 +220,16 @@ def get_checkpoints(map, start, goal, px2mm):
     
     # transform cm to px
     robot_radius = int(robot_radius*10/px2mm)
+    print(f"robot_radius: {robot_radius}")
+    print(f"robot_radius: {robot_radius-5}")
 
     # Inflate the obstacles
     inflated_grid = inflate_obstacles(map, robot_radius)
     inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
+
+    smaller_inflated_grid = inflate_obstacles(map, robot_radius-1)
+    smaller_inflated_grid = inflate_borders(smaller_inflated_grid, robot_radius-1)
+    
 
     # Run A* algorithm on the inflated grid
     path = a_star(inflated_grid, start, goal)
@@ -143,24 +244,25 @@ def get_checkpoints(map, start, goal, px2mm):
         if (x2 - x0) * (y1 - y0) != (x1 - x0) * (y2 - y0):
             checkpoints.append([path[i][1], path[i][0]])
 
-    # plot_grid_with_inflation_and_checkpoints(map, inflated_grid, checkpoints, path=path, start=start, goal=goal)
-    return checkpoints
+    checkpoints = visibility_graph_simple(checkpoints, smaller_inflated_grid)
 
+    plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    return checkpoints
 
 # map_shape = (240, 350)
 # grid = np.zeros(map_shape)
 # grid[100:150, 50:80] = 1  # Example obstacle
-
+# 
 # start = np.array([252.0, 110.5])  # Note: x and y will be swapped
 # goal = np.array([52, 190])
-
+# 
 # robot_width = 12
 # robot_radius = robot_width // 2
-
+# 
 # inflated_grid = inflate_obstacles(grid, robot_radius)
 # inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
-
+# 
 # path = a_star(inflated_grid, start, goal)
-# checkpoints = get_checkpoints(path)
-
+# checkpoints = get_checkpoints(path, start, goal, 3.0)
+# 
 # plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)

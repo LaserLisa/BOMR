@@ -19,6 +19,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
     cam = camera.Camera(0, window_size=2)
     pix2mm = cam.pixel2mm
+    print(pix2mm)
 
     print("Initializing map...")
     cam.initialize_map(show=True, show_all=False)
@@ -38,11 +39,9 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing Thymio...")
     driver = Driving()
 
-    print(">> Initializing filter")
-    ekf = Extended_Kalman_Filter(pix2mm)
-    ekf.Sigma = np.eye(5)
-    ekf.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
-    ekf.old_time = time.time()
+    print("Initializing filter")
+    ekf = Extended_Kalman_Filter(pix2mm, robot_pose_px)
+    
 
     return cam, driver, ekf, checkpoints
 
@@ -55,18 +54,12 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        ekf.update_time(time.time())
-        l_speed, r_speed = driver.get_motor_speeds()
-        # print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        ekf.extended_kalman(
-            ekf.u_input(l_speed, r_speed),
-            ekf.system_state(robot_pose_px),
-        )
-        robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
+        l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
+        print(f"robot speed kalman: {l_speed}\t {r_speed}")
+        # print("Filtering")
+        robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
 
-        # Reset filter
-        ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
-        # print(f"robot speed pose kalmam: {robot_pose_mm}")
+       
         # Display the frame and map
         cam.display_map(robot_pose_mm)
         if DEBUG:
@@ -74,7 +67,7 @@ def update_camera_and_kalman(cam: camera.Camera):
             cv2.imshow("Camera", frame)
         cv2.waitKey(1)
 
-        # time.sleep(0.01)  # Prevent excessive CPU usage
+        # time.sleep(0.01)
 
     print("update_camera_and_kalman thread exiting")
 

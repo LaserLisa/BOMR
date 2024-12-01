@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 class Extended_Kalman_Filter():
-    def __init__(self, pix2mm):
+    def __init__(self, pix2mm, robot_pose_px):
         '''
         Extended Kalman Filter Noise Covariance matrix.
         R is the measurement noise covariant matrix. It injects the standard deviation of correct thymio measurement localization
@@ -18,6 +18,8 @@ class Extended_Kalman_Filter():
         self.scaling_factor = pix2mm #[mm/pxl]
         self.wheel_distance = 100
         pxl_var = 0.25
+        self.Sigma = np.eye(5)  # Initialize covariance matrix
+        self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
                     0,         # variance of yaw angle          in rad^2
@@ -35,7 +37,7 @@ class Extended_Kalman_Filter():
         Function that determines the amount of time in seconds since the last call of the kalman filter 
         Input: - time : time of execution of the EKF
         Output: - dt : change in time since last iteration 
-                - olt_time : save the value if the timer for next iteration 
+                - olt_time : save the value of the timer for next iteration 
         '''
         self.dt = time - self.old_time
         self.old_time = time 
@@ -185,14 +187,30 @@ class Extended_Kalman_Filter():
         Mu_pred = self.Get_Mu_pred(u, Q, self.dt, self.Mu)
         G = self.jacobian_G(self.Mu[2], u[0])
         Sigma_pred = np.dot(G,np.dot(self.Sigma,G.T)) + Q
-
-        #Calculate Kalman Gain
-        H = np.eye(5)  #technically jacobian of h(x), the camera measurements function
-        S = np.dot(np.dot(H,Sigma_pred),H.T) + self.R
-        K = np.dot(Sigma_pred,np.dot(H.T,np.linalg.inv(S)))
-
-        #Update Estimated values
-        Mu_est = Mu_pred + np.dot(K,(y - self.measure_state(Mu_pred)))
-        Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
+        
+        # Check if the camera measurement is valid (i.e., no NaN values)
+        if np.isnan(y).any():
+            #print("Camera measurement unavailable, skipping update step.")
+            # Skip the measurement update step and only return the prediction
+            Mu_est = Mu_pred  # No update to the state from the camera
+            Sigma_est = Sigma_pred  # No update to the covariance
+        else: 
+            #Calculate Kalman Gain
+            H = np.eye(5)  #technically jacobian of h(x), the camera measurements function
+            S = np.dot(np.dot(H,Sigma_pred),H.T) + self.R
+            K = np.dot(Sigma_pred,np.dot(H.T,np.linalg.inv(S)))
+        
+            #Update Estimated values
+            Mu_est = Mu_pred + np.dot(K,(y - self.measure_state(Mu_pred)))
+            Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
+
+     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
+        self.dt = time
+        self.extended_kalman(ekf.u_input(l_speed, r_speed),
+                            ekf.system_state(robot_pose_px))
+        x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
+        robot_pose_mm = ([x, y], theta)
+        return robot_pose_mm
+         
