@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 class Extended_Kalman_Filter():
-    def __init__(self, pix2mm):
+    def __init__(self, pix2mm, robot_pose_px):
         '''
         Extended Kalman Filter Noise Covariance matrix.
         R is the measurement noise covariant matrix. It injects the standard deviation of correct thymio measurement localization
@@ -201,4 +201,5 @@ class Extended_Kalman_Filter():
      def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
         self.dt = time
         self.extended_kalman(ekf.u_input(l_speed, r_speed),
-                            ekf.system_state(robot_pose_px),
+                            ekf.system_state(robot_pose_px))
+         
