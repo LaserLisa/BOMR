@@ -19,6 +19,7 @@ class Extended_Kalman_Filter():
         self.wheel_distance = 100
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
+        self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
                     0,         # variance of yaw angle          in rad^2
