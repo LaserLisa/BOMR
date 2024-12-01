@@ -1,6 +1,7 @@
 from tdmclient import ClientAsync, aw
 import time
 import math
+import numpy as np
 
 class Driving:
     def __init__(self):
@@ -74,6 +75,7 @@ class Driving:
             duration = abs((angle)*scaling_factor)
             self.execute_command(speed, -speed, duration)
             print(f"Turning {angle} rad")
+    
     def move(self, distance):
         """
         Move the robot forward for a given distance in millimeters.
@@ -89,25 +91,44 @@ class Driving:
         print(f"Moving {distance} mm")
         self.execute_command(speed, speed, duration)
 
+    def stop(self):
+        """
+        Stop the robot.
+        """
+        print("Stopping the robot")
+        self.execute_command(0, 0, 0)
+
     def px_to_mm(self, val):
         return 3*val
 
-    def move_to_checkpoint(self, pos_x, pos_y, pos_angle, check_x, check_y):
-        #x, y coordinates are in milimeters, pixel to mm mapping TBD more precisely
-
-        print(f"move between {pos_x}, {pos_y} and {check_x}, {check_y}")
-    
-        dx = check_x - pos_x
-        dy = check_y - pos_y
+    def move_to_checkpoint(self, robot_pose: tuple[np.ndarray, float], checkpoint: np.ndarray):
+        #x, y coordinates are in px, pixel to mm mapping TBD more precisely
+        if np.isnan(robot_pose[0]).any():
+            return
+        dx = checkpoint[0] - robot_pose[0][0]
+        dy = checkpoint[1] - robot_pose[0][1]
         
-        dir = math.atan2(dy, dx)
+        dir = np.arctan2(dy, dx)
 
-        self.turn(dir - pos_angle)
-        self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
-
+        angle = dir - robot_pose[1]
+        print(f"angle error: {np.degrees(angle)}")
+        print(f"dir error: {np.degrees(dir)}", end="")
+        angle = angle if abs(angle) > np.deg2rad(20) else 0
+        P = 60
+        l_speed = 100 - P * angle
+        r_speed = 100 + P * angle
+        # distance = np.linalg.norm([dx, dy])
+        # self.turn(dir - robot_pose[1])
+        # self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
+        # print(f"sending speeds: {l_speed}, {r_speed}")
+        v = {
+            "motor.left.target": [int(l_speed)],
+            "motor.right.target": [int(r_speed)],
+        }
+        aw(self.node.set_variables(v))
         self.dir = dir
-        self.x = check_x
-        self.y = check_y
+        self.x = checkpoint[0]
+        self.y = checkpoint[1]
 
 
     def get_motor_speeds(self):
@@ -119,6 +140,7 @@ class Driving:
         - right_speed: Speed of the right motor
         """
     # try:
+        aw(self.node.wait_for_variables({"motor.left.speed", "motor.right.speed"}))
         # Fetch motor speed values from Thymio's variables
         left_speed = self.node["motor.left.speed"]
         right_speed = self.node["motor.right.speed"]

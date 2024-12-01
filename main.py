@@ -7,9 +7,13 @@ from src.vision import camera
 import src.path_planning.path_planning as pp
 from src.filter.kalman_filter import Extended_Kalman_Filter
 from src.motion_control.driving import Driving
+from src.motion_control.helpers import checkpoint_reached
+# from local_nav import obstacle_detected
+def obstacle_detected():
+    return False
 
-running = False
-DEBUG = False
+running = False # global variable to enable disable threads
+DEBUG = False # global variable to enable/disable debug messages
 
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
@@ -23,9 +27,9 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
-    print(checkpoints)
-    #checkpoints = [goal]
+    # checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
+    # print(checkpoints)
+    checkpoints = [goal]
     cam.set_checkpoints(checkpoints)
 
     for val in checkpoints:
@@ -52,8 +56,8 @@ def update_camera_and_kalman(cam: camera.Camera):
         robot_pose_px = cam.get_robot_pose()
 
         ekf.update_time(time.time())
-        l_speed, r_speed = driver.get_l_speeds(), driver.get_r_speeds()
-        print(f"robot speed kalman: {l_speed}\t {r_speed}")
+        l_speed, r_speed = driver.get_motor_speeds()
+        # print(f"robot speed kalman: {l_speed}\t {r_speed}")
         ekf.extended_kalman(
             ekf.u_input(l_speed, r_speed),
             ekf.system_state(robot_pose_px),
@@ -62,8 +66,9 @@ def update_camera_and_kalman(cam: camera.Camera):
 
         # Reset filter
         ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
+        # print(f"robot speed pose kalmam: {robot_pose_mm}")
         # Display the frame and map
-        cam.display_map()
+        cam.display_map(robot_pose_mm)
         if DEBUG:
             frame = cam.get_current_frame()
             cv2.imshow("Camera", frame)
@@ -80,8 +85,21 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     print("Starting motion_control thread")
     robot_pose = camera.get_robot_pose()
     (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
+    state = 0
     for i in range(len(checkpoints)):
-        driver.move_to_checkpoint(driver.x, driver.y, driver.dir, checkpoints[i][0], checkpoints[i][1])
+        if DEBUG:
+            print(f"Moving to checkpoint: {checkpoints[i]}")
+        while not checkpoint_reached(checkpoints[i], robot_pose[0]):
+            if obstacle_detected():
+                state = 1
+            if state == 0: # global nav
+                driver.move_to_checkpoint(robot_pose, checkpoints[i])
+            elif state == 1: # local nav
+                # use proximity sensor inputs to avoid obstacles
+                ...
+            # update robot pose by vision + kalman
+            robot_pose = camera.get_robot_pose()
+
     
     running = False
     print("ITERATION COMPLETED ----------------------------------------------")

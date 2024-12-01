@@ -132,8 +132,9 @@ class Camera(cv2.VideoCapture):
             draw_path(self._checkpoints)
 
         if pose_estimation:
-            draw_robot(pose_estimation[0].astype(int), pose_estimation[1], (0, 255, 0))
-        if not (np.isnan(self._robot_position.value).all() or 
+            if not (np.isnan(pose_estimation[0]).any() or np.isnan(pose_estimation[1])):
+                draw_robot(np.array(pose_estimation[0]), pose_estimation[1], (0, 255, 0))
+        if not (np.isnan(self._robot_position.value).any() or 
                 np.isnan(self._robot_orientation.value)):
             position = self._robot_position.value.astype(int)
             angle = self._robot_orientation.value
