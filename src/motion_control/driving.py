@@ -35,6 +35,7 @@ class Driving:
         """
         Callback function to handle variable updates.
         Updates proximity sensor values when 'prox.horizontal' changes.
+        This was inspired by this example: https://pypi.org/project/tdmclient/#:~:text=To%20read%20variables,typing%20control%2DC.
         """
         try:
             if "prox.horizontal" in variables:
@@ -93,6 +94,21 @@ class Driving:
 
     def get_time (self):
         return self.time
+
+    def set_motor_speeds(self, left_speed, right_speed):
+        """
+        Set the motor speeds of the left and right motors.
+
+        :param left_speed: Speed of the left motor
+        :param right_speed: Speed of the right motor
+        """
+
+        print(f"Setting motor speeds: Left = {left_speed}, Right = {right_speed}")
+        v = {
+            "motor.left.target": [left_speed],
+            "motor.right.target": [right_speed],
+        }
+        aw(self.node.set_variables(v))
 
     def turn(self, angle):
         speed = 200
@@ -183,3 +199,6 @@ class Driving:
     # except KeyError as e:
         # print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
         # return None, None
+
+
+    

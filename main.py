@@ -8,12 +8,13 @@ import src.path_planning.path_planning as pp
 from src.filter.kalman_filter import Extended_Kalman_Filter
 from src.motion_control.driving import Driving
 from src.motion_control.helpers import checkpoint_reached
-# from local_nav import obstacle_detected
-def obstacle_detected():
-    return False
+import src.motion_control.local_navigation as ln
 
-running = False # global variable to enable disable threads
-DEBUG = False # global variable to enable/disable debug messages
+running = False        # global variable to enable disable threads
+DEBUG = False          # global variable to enable/disable debug messages
+obst = [0, 0, 0, 0, 0] # global variable to store obstacle measurements
+state = 0              # global variable to store the state of the navigation: "global"=0 or "local"=1
+
 
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing camera...")
@@ -72,31 +73,26 @@ def update_camera_and_kalman(cam: camera.Camera):
 
     print("update_camera_and_kalman thread exiting")
 
-
-
 def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
-    global running
+    global running, state, obst
     print("Starting motion_control thread")
     robot_pose = camera.get_robot_pose()
     (driver.x, driver.y, driver.dir) = (robot_pose[0][0], robot_pose[0][1], robot_pose[1])
-    state = 0
 
-    
     for i in range(len(checkpoints)):
        # if DEBUG:
           #  print(f"Moving to checkpoint: {checkpoints[i]}")
         print(i)
         while not checkpoint_reached(checkpoints[i], robot_pose[0]):
-            if obstacle_detected():
-                state = 1
-            if state == 0: # global nav
-                # print(f"moving to checkpoint")
-                print(robot_pose)
-                print(checkpoints[i])
+            # Check if the navigation state should be switched
+            state = ln.get_navigation_state()
+
+            if state == 0: #global navigation
                 driver.move_to_checkpoint(robot_pose, checkpoints[i])
-            elif state == 1: # local nav
-                # use proximity sensor inputs to avoid obstacles
-                ...
+            else: #local navigation
+                motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst, w_l, w_r)
+                driver.set_motor_speeds(motor_left_speed, motor_right_speed)
+
             # update robot pose by vision + kalman
             robot_pose = camera.get_robot_pose()
     
@@ -106,7 +102,6 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     print("ITERATION COMPLETED ----------------------------------------------")
     print("motion_control thread exiting")
 
-
 if __name__ == "__main__":
     running = True
     cam, driver, ekf, checkpoints = init()
@@ -115,8 +110,6 @@ if __name__ == "__main__":
     t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
     t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints), daemon=True)
 
-
-    
     print("threads defined")
     t1.start()
     t2.start()
