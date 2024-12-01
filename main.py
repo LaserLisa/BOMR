@@ -93,12 +93,11 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
                 # print(f"moving to checkpoint")
                 print(robot_pose)
                 print(checkpoints[i])
+                robot_pose = camera.get_robot_pose()
                 driver.move_to_checkpoint(robot_pose, checkpoints[i])
             elif state == 1: # local nav
                 # use proximity sensor inputs to avoid obstacles
                 ...
-            # update robot pose by vision + kalman
-            robot_pose = camera.get_robot_pose()
     
 
     

@@ -3,6 +3,7 @@ import time
 import math
 import numpy as np
 import asyncio
+import threading
 
 class Driving:
     def __init__(self):
@@ -75,14 +76,17 @@ class Driving:
         aw(self.node.set_variables(v))
 
         # Wait for the specified duration
-        time.sleep(duration)
 
+        timer = threading.Timer(duration, time.sleep(self.stop))
+        timer.start()
+        '''
         # Stop the motors
         v = {
             "motor.left.target": [0],
             "motor.right.target": [0],
         }
         aw(self.node.set_variables(v))
+        '''
         print("Movement completed.\n")
 
     def get_l_speeds (self):
