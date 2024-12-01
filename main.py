@@ -54,9 +54,7 @@ def update_camera_and_kalman(cam: camera.Camera):
         ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
         robot_pose_mm = ([ekf.Mu[0], ekf.Mu[1]], ekf.Mu[2])
 
-        # Reset filter
-        ekf.Mu = [robot_pose_mm[0][0], robot_pose_mm[0][1], robot_pose_mm[1], 0, 0]
-        
+       
         # Display the frame and map
         cam.display_map()
         if DEBUG:
