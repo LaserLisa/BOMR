@@ -25,7 +25,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     driver = Driving()
 
     print("Initializing filter")
-    ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose())
+    ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose(), time())
     
 
     return cam, driver, ekf, checkpoints
@@ -53,7 +53,7 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        # l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , driver.get_time()
+        # l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , time.time()
         # # print(f"robot speed kalman: {l_speed}\t {r_speed}")
         # #print("Filtering")
         # robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
