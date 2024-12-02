@@ -3,6 +3,8 @@ import time
 import math
 import numpy as np
 import asyncio
+import threading
+from simple_pid import PID
 
 class Driving:
     def __init__(self):
@@ -22,6 +24,7 @@ class Driving:
         self.dir = 0
         self.prox = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
         self.sensor_scale = 200  # Scale of the proximity sensors
+        self.pid = PID(60, 0, 0, setpoint=0)
         aw(self.initialize_node_listeners())
 
     async def initialize_node_listeners(self):
@@ -77,6 +80,8 @@ class Driving:
 
         # Wait for the specified duration
         time.sleep(duration)
+        # timer = threading.Timer(duration, self.stop)
+        # timer.start()
 
         # Stop the motors
         v = {
@@ -160,22 +165,24 @@ class Driving:
         dir = np.arctan2(dy, dx)
 
         angle = dir - robot_pose[1]
+        if abs(angle) > np.deg2rad(10):
+            self.turn(angle)
+        else:
         # print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
-        P = 60
-        l_speed = 100 - P * angle
-        r_speed = 100 + P * angle
-        # distance = np.linalg.norm([dx, dy])
-        # self.turn(dir - robot_pose[1])
-        # self.move(self.px_to_mm(math.sqrt(pow(dx, 2)+pow(dy, 2))))
-        # print(f"sending speeds: {l_speed}, {r_speed}")
-        v = {
-            "motor.left.target": [int(l_speed)],
-            "motor.right.target": [int(r_speed)],
-        }
-        aw(self.node.set_variables(v))
-        self.dir = dir
-        self.x = checkpoint[0]
-        self.y = checkpoint[1]
+            gain = self.pid(angle)
+            l_speed = 100 + gain
+            r_speed = 100 - gain
+            # distance = np.linalg.norm([dx, dy])
+            # self.move(self.px_to_mm(distance))
+            print(f"sending speeds: {l_speed}, {r_speed}")
+            v = {
+                "motor.left.target": [int(l_speed)],
+                "motor.right.target": [int(r_speed)],
+            }
+            aw(self.node.set_variables(v))
+            self.dir = dir
+            self.x = checkpoint[0]
+            self.y = checkpoint[1]
 
     def get_motor_speeds(self):
         """

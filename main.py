@@ -26,7 +26,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)[1:]
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)
     print(checkpoints)
     cam.set_checkpoints(checkpoints)
 
