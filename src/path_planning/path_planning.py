@@ -213,15 +213,13 @@ def visibility_graph_simple(checkpoints, inflated_grid):
 
 
 
-def get_checkpoints(map, start, goal, px2mm):
+def get_checkpoints(map, start, goal, px2mm, plot=False):
     # Define robot size
-    robot_width = 12
-    robot_radius = robot_width / 2
+    robot_radius = 8
     
     # transform cm to px
     robot_radius = int(robot_radius*10/px2mm)
     print(f"robot_radius: {robot_radius}")
-    print(f"robot_radius: {robot_radius-5}")
 
     # Inflate the obstacles
     inflated_grid = inflate_obstacles(map, robot_radius)
@@ -246,7 +244,8 @@ def get_checkpoints(map, start, goal, px2mm):
 
     checkpoints = visibility_graph_simple(checkpoints, smaller_inflated_grid)
 
-    # plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
+    if plot:
+        plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
 # map_shape = (240, 350)

@@ -17,6 +17,7 @@ class Camera(cv2.VideoCapture):
         self._warped = None
         self._map = None
         self._obstacles_contours = None
+        self._window_size = window_size
         self._init_map = False
         self._corners = [None, None, None, None]
         self._goal_position = None
@@ -152,6 +153,15 @@ class Camera(cv2.VideoCapture):
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
         return (cv2.cvtColor(self._map, cv2.COLOR_BGR2GRAY) == 255).astype(int)
+    
+    def reset(self):
+        """Resets the map"""
+        self._init_map = False
+        self._corners = [None, None, None, None]
+        self._goal_position = None
+        self._robot_position = Position(self._window_size)
+        self._robot_orientation = Orientation(self._window_size)
+        self._checkpoints = None
     
     def get_robot_pose(self) -> tuple:
         """Returns the robot pose ([x,y],angle)"""

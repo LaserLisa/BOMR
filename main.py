@@ -19,6 +19,18 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     pix2mm = cam.pixel2mm
     print(pix2mm)
 
+    checkpoints = init_map(cam)
+
+    print("Initializing Thymio...")
+    driver = Driving()
+
+    print("Initializing filter")
+    ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose())
+    
+
+    return cam, driver, ekf, checkpoints
+
+def init_map(cam: camera.Camera) -> list:
     print("Initializing map...")
     cam.initialize_map(show=True, show_all=False)
     
@@ -26,21 +38,11 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     map = cam.get_map()
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
-    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, pix2mm)
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, cam.pixel2mm, 
+                                     plot=True)
     print(checkpoints)
     cam.set_checkpoints(checkpoints)
-
-    for val in checkpoints:
-        print(val, "\n")
-
-    print("Initializing Thymio...")
-    driver = Driving()
-
-    print("Initializing filter")
-    ekf = Extended_Kalman_Filter(pix2mm, robot_pose_px)
-    
-
-    return cam, driver, ekf, checkpoints
+    return checkpoints
 
 def update_camera_and_kalman(cam: camera.Camera):
     global running
@@ -64,11 +66,9 @@ def update_camera_and_kalman(cam: camera.Camera):
         if DEBUG:
             frame = cam.get_current_frame()
             cv2.imshow("Camera", frame)
-        cv2.waitKey(1)
+        # This function waits fro 1 ms and is necessary for the frame to be displayed
+        cv2.waitKey(1) 
 
-        # time.sleep(0.01)
-
-    print("update_camera_and_kalman thread exiting")
 
 def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     global running, state, obst
@@ -95,6 +95,8 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
             robot_pose = camera.get_robot_pose()
         if DEBUG:
             print(f"Checkpoint {i} reached")
+    driver.stop()
+    print("Goal reached")
     
 
     
@@ -105,24 +107,36 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
 if __name__ == "__main__":
     running = True
     cam, driver, ekf, checkpoints = init()
+    
+    while True:
+        # Start threads
+        t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
+        t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints), daemon=True)
 
-    # Start threads
-    t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
-    t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints), daemon=True)
+        print("threads defined")
+        t1.start()
+        t2.start()
 
-    print("threads defined")
-    t1.start()
-    t2.start()
+        # wait until threads terminate
+        t1.join()
+        t2.join()
+        cv2.destroyAllWindows()
+        command = input("Press 'q' to quit and r to restart: ").strip()
+        if command.lower() == "q":
+            break
+        elif command.lower() == "r":
+            running = True
+            cam.reset()
+            checkpoints = init_map(cam)
+            print("Restarting threads")
+        else:
+            print("Invalid command")
+            break
 
-    # wait until threads terminate
-    t1.join()
-    t2.join()
 
     print("Releasing all objects")
     cam.release()
     print("Camera released")
-    cv2.destroyAllWindows()
-    print("OpenCV windows destroyed")
     driver.__del__()
     print("Driver released")
     

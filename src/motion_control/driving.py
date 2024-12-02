@@ -1,17 +1,15 @@
 from tdmclient import ClientAsync, aw
 import time
-import math
 import numpy as np
-import asyncio
-import threading
 from simple_pid import PID
 
 class Driving:
-    def __init__(self):
+    def __init__(self, px2mm=3):
         self.wheel_radius = 20  # [mm]
         self.max_wheel_speed = 0.7  # [revolution per second at 500]
         self.r_speed = 66 #[mm/s]
         self.l_speed = 66 #[mm/s]
+        self.px2mm = px2mm
         self.time = 0 
         self.client = ClientAsync()
         self.client.process_waiting_messages()
@@ -19,9 +17,6 @@ class Driving:
         aw(self.node.unlock())
         print("Thymio connected:", self.node)
         aw(self.node.lock())
-        self.x = 0
-        self.y = 0
-        self.dir = 0
         self.prox = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
         self.sensor_scale = 200  # Scale of the proximity sensors
         self.pid = PID(60, 0, 0, setpoint=0)
@@ -89,7 +84,6 @@ class Driving:
             "motor.right.target": [0],
         }
         aw(self.node.set_variables(v))
-        print("Movement completed.\n")
 
     def get_l_speeds (self):
         return self.l_speed 
@@ -116,6 +110,11 @@ class Driving:
         aw(self.node.set_variables(v))
 
     def turn(self, angle):
+        """ Turns a given angle in radians
+
+        Args:
+            angle (float): Angle to turn in radians
+        """
         speed = 200
         scaling_factor = 0.73 # empirical value
 
@@ -130,6 +129,7 @@ class Driving:
             self.execute_command(speed, -speed, duration)
             print(f"Turning {angle} rad")
 
+    # TODO: Function not used, remove (or maybe use for local avoidance)?
     def move(self, distance):
         """
         Move the robot forward for a given distance in millimeters.
@@ -149,40 +149,47 @@ class Driving:
         """
         Stop the robot.
         """
-        print("Stopping the robot")
-        self.execute_command(0, 0, 0)
+        self.set_motor_speeds(0, 0)
 
     def px_to_mm(self, val):
-        return 3*val
+        return self.px2mm*val
 
     def move_to_checkpoint(self, robot_pose: tuple[np.ndarray, float], checkpoint: np.ndarray):
-        #x, y coordinates are in px, pixel to mm mapping TBD more precisely
+        """
+        Function to move the robot to a given point in the map. P(ID) control on the
+        angle is used to steer the robot towards the checkpoint.
+
+        Args:
+            robot_pose (tuple): Current robot pose as a tuple of (position, orientation)
+            checkpoint (np.ndarray): Coordinates of the checkpoint [x, y]
+        """
         if np.isnan(robot_pose[0]).any():
             return
+
         dx = checkpoint[0] - robot_pose[0][0]
         dy = robot_pose[0][1] - checkpoint[1]
         
         dir = np.arctan2(dy, dx)
 
+        # angle between robot's orientation and direction to the checkpoint
         angle = dir - robot_pose[1]
+
+        # Normalize angle to [-pi, pi] (i.e. alwas turn into the shortest direction)
+        if (abs(angle) > np.pi):
+            angle = angle - 2*np.pi*np.sign(angle)
+
+        # If the angle is too large, turn in place, here we don't do local avoidance
+        # as we turn on the spot
         if abs(angle) > np.deg2rad(10):
             self.turn(angle)
+        
+        # Otherwise, move forward with a P(ID) control to steer towards the checkpoint
         else:
-        # print(f"angle error: {np.degrees(angle)} \t dir error: {np.degrees(dir)}\r", end="")
             gain = self.pid(angle)
             l_speed = 100 + gain
             r_speed = 100 - gain
-            # distance = np.linalg.norm([dx, dy])
-            # self.move(self.px_to_mm(distance))
-            print(f"sending speeds: {l_speed}, {r_speed}")
-            v = {
-                "motor.left.target": [int(l_speed)],
-                "motor.right.target": [int(r_speed)],
-            }
-            aw(self.node.set_variables(v))
-            self.dir = dir
-            self.x = checkpoint[0]
-            self.y = checkpoint[1]
+
+            self.set_motor_speeds(int(l_speed), int(r_speed))
 
     def get_motor_speeds(self):
         """
@@ -192,7 +199,6 @@ class Driving:
         - left_speed: Speed of the left motor
         - right_speed: Speed of the right motor
         """
-    # try:
         aw(self.node.wait_for_variables({"motor.left.speed", "motor.right.speed"}))
         # Fetch motor speed values from Thymio's variables
         left_speed = self.node["motor.left.speed"]
