@@ -56,10 +56,10 @@ def update_camera_and_kalman(cam: camera.Camera):
         # l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , time.time()
         # # print(f"robot speed kalman: {l_speed}\t {r_speed}")
         # #print("Filtering")
-        # robot_pose_mm = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
+        # robot_pose_kalman = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
         # #if l_speed == -r_speed:
-           # print("px:", robot_pose_px)
-           # print("mm", robot_pose_mm)
+           # print("before kalman:", robot_pose_px)
+           # print("after kalman", robot_pose_kalman)
        
         # Display the frame and map
         cam.display_map()
