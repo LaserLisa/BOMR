@@ -5,14 +5,14 @@ import math
 import numpy as np
 
 class Extended_Kalman_Filter():
-    def __init__(self, pix2mm, robot_pose_px):
+    def __init__(self, pix2mm, robot_pose_px, time):
         '''
         Extended Kalman Filter Noise Covariance matrix.
         R is the measurement noise covariant matrix. It injects the standard deviation of correct thymio measurement localization
         by taking into account pixel resolution, image scale and computational errors from our find_robot function.
         '''
         # Covariance for EKF simulation
-        self.dt = 0.2     #[s]
+        self.dt = time     #[s]
         self.old_time = 0
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = pix2mm #[mm/pxl]
@@ -73,7 +73,7 @@ class Extended_Kalman_Filter():
         Output: - u  : The current motor control values.
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
-        v = (speed_r + speed_l)/2
+        v = (1/scaling_factor) * (speed_r + speed_l)/2
         theta_dot = (speed_r - speed_l)/self.wheel_distance
         u = np.array([v, theta_dot]).T
         return u
@@ -97,7 +97,7 @@ class Extended_Kalman_Filter():
 
     def system_state(self, robot_pose_px):
         '''
-        Function that takes a picture and analyses the data to return the current measurement state vector.
+        Function that analyses the data to return the current measurement state vector.
 
         Inputs: - Mu : The previous mesurement time's mean system state values.
                    1x5 vector that holds the current axis coordinates, angle,
@@ -152,7 +152,7 @@ class Extended_Kalman_Filter():
 
         Output: - G : 5x5 Jacobian matrix of thymio state function applied to input values
         '''
-        v = scaling_factor * v
+        v = 1/(scaling_factor) * v
         G = np.array([[1,0,-self.dt*v*math.sin(theta),self.dt*math.cos(theta),0],
                      [0,1, self.dt*v*math.cos(theta),self.dt*math.sin(theta),0],
                      [0,0,1,0,self.dt],
@@ -208,9 +208,9 @@ class Extended_Kalman_Filter():
         self.Mu, self.Sigma = Mu_est, Sigma_est
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
-        self.dt = time
+        self.update_time (time)
         self.extended_kalman(self.u_input(l_speed, r_speed),self.system_state(robot_pose_px))
         x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
-        robot_pose_mm = ([x, y], theta)
-        return robot_pose_mm
+        robot_pose = ([x, y], theta)
+        return robot_pose
          
