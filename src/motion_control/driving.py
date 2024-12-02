@@ -107,6 +107,8 @@ class Driving:
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
         }
+        self.r_speed = right_speed / 3 
+        self.l_speed = left_speed  / 3
         aw(self.node.set_variables(v))
 
     def turn(self, angle):
@@ -180,7 +182,7 @@ class Driving:
 
         # If the angle is too large, turn in place, here we don't do local avoidance
         # as we turn on the spot
-        if abs(angle) > np.deg2rad(10):
+        if abs(angle) > np.deg2rad(25):
             self.turn(angle)
         
         # Otherwise, move forward with a P(ID) control to steer towards the checkpoint
@@ -205,9 +207,7 @@ class Driving:
         right_speed = self.node["motor.right.speed"]
 
         # Convert to mm/s using the calibration factor
-        left_speed = 0.4 * left_speed
-        right_speed = 0.4 * right_speed
-        return left_speed, right_speed
+        return left_speed/3, right_speed/3
     # except KeyError as e:
         # print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
         # return None, None

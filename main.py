@@ -25,7 +25,8 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     driver = Driving()
 
     print("Initializing filter")
-    ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose(), time())
+    ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose(), time.time())
+    print(cam.get_robot_pose())
     
 
     return cam, driver, ekf, checkpoints
@@ -45,6 +46,7 @@ def init_map(cam: camera.Camera) -> list:
     return checkpoints
 
 def update_camera_and_kalman(cam: camera.Camera):
+    ekf.update_time(time.time())
     global running
     # global driver
     print("Starting update_camera_and_kalman thread")
@@ -53,16 +55,21 @@ def update_camera_and_kalman(cam: camera.Camera):
         cam.update(corners=False, obstacles_goal=False, show_all=False)
         robot_pose_px = cam.get_robot_pose()
 
-        # l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , time.time()
+        # TODO: To get real speeds
+        # l_speed, r_speed= driver.get_motor_speeds()
+        # dt = time.time()
+        l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , time.time()
+
+
         # # print(f"robot speed kalman: {l_speed}\t {r_speed}")
         # #print("Filtering")
-        # robot_pose_kalman = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
+        robot_pose_kalman = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
         # #if l_speed == -r_speed:
-           # print("before kalman:", robot_pose_px)
-           # print("after kalman", robot_pose_kalman)
+        # print("before kalman:", robot_pose_px)
+        # print("after kalman", robot_pose_kalman)
        
         # Display the frame and map
-        cam.display_map()
+        cam.display_map(pose_estimation=robot_pose_kalman)
         if DEBUG:
             frame = cam.get_current_frame()
             cv2.imshow("Camera", frame)
@@ -70,7 +77,7 @@ def update_camera_and_kalman(cam: camera.Camera):
         cv2.waitKey(1) 
 
 
-def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
+def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list, ekf: Extended_Kalman_Filter):
     global running, state, obst
     print("Starting motion_control thread")
     robot_pose = camera.get_robot_pose()
@@ -92,7 +99,7 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
                 driver.set_motor_speeds(motor_left_speed, motor_right_speed)
 
             # update robot pose by vision + kalman
-            robot_pose = camera.get_robot_pose()
+            robot_pose = ekf.get_robot_pose()
         if DEBUG:
             print(f"Checkpoint {i} reached")
     driver.stop()
@@ -108,7 +115,7 @@ if __name__ == "__main__":
     while True:
         # Start threads
         t1 = threading.Thread(target=update_camera_and_kalman, args=(cam, ), daemon=True)
-        t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints), daemon=True)
+        t2 = threading.Thread(target=motion_control, args=(driver, cam, checkpoints, ekf), daemon=True)
 
         print("threads defined")
         t1.start()

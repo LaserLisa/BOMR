@@ -12,11 +12,11 @@ class Extended_Kalman_Filter():
         by taking into account pixel resolution, image scale and computational errors from our find_robot function.
         '''
         # Covariance for EKF simulation
-        self.dt = time     #[s]
-        self.old_time = 0
+        self.dt = 0    #[s]
+        self.old_time = time 
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = pix2mm #[mm/pxl]
-        self.wheel_distance = 100
+        self.wheel_distance = 98
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
         self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
@@ -73,7 +73,7 @@ class Extended_Kalman_Filter():
         Output: - u  : The current motor control values.
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
-        v = (1/scaling_factor) * (speed_r + speed_l)/2
+        v = (1/self.scaling_factor) * (speed_r + speed_l)/2
         theta_dot = (speed_r - speed_l)/self.wheel_distance
         u = np.array([v, theta_dot]).T
         return u
@@ -128,7 +128,7 @@ class Extended_Kalman_Filter():
                        1x5 vector that holds the current axis coordinates, angle,
                        velocity and angular velocity estimations.
                 - u  : The current motor control values.
-                       1x2 vector that holds current inputed speed and angular velocity.
+                       1x2 vector that holds current speed and angular velocity.
 
         Outputs: -Mu_pred : The current predicted system state values based on previous values
                             and current input motor control data.
@@ -136,7 +136,7 @@ class Extended_Kalman_Filter():
         theta = Mu[2]
         A = np.eye(5)*np.array([1,1,1,0,0])
         B = np.array([[delta_t*math.cos(theta),0],
-                     [delta_t*math.sin(theta),0],
+                     [-delta_t*math.sin(theta),0],
                      [0,delta_t],
                      [1,0],
                      [0,1]])
@@ -152,7 +152,7 @@ class Extended_Kalman_Filter():
 
         Output: - G : 5x5 Jacobian matrix of thymio state function applied to input values
         '''
-        v = 1/(scaling_factor) * v
+        v = 1/(self.scaling_factor) * v
         G = np.array([[1,0,-self.dt*v*math.sin(theta),self.dt*math.cos(theta),0],
                      [0,1, self.dt*v*math.cos(theta),self.dt*math.sin(theta),0],
                      [0,0,1,0,self.dt],
@@ -206,11 +206,15 @@ class Extended_Kalman_Filter():
             Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
+        self.Mu[3], self.Mu[4] = 0,0 
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
         self.update_time (time)
         self.extended_kalman(self.u_input(l_speed, r_speed),self.system_state(robot_pose_px))
         x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
-        robot_pose = ([x, y], theta)
+        robot_pose = (np.array([x, y]), theta)
         return robot_pose
          
+    def get_robot_pose(self)-> tuple:
+        x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
+        return (np.array([x, y]), theta)
