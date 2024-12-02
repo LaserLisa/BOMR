@@ -98,11 +98,8 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list):
     driver.stop()
     print("Goal reached")
     
-
-    
+    # variable to stop the vision thread
     running = False
-    print("ITERATION COMPLETED ----------------------------------------------")
-    print("motion_control thread exiting")
 
 if __name__ == "__main__":
     running = True
@@ -140,7 +137,3 @@ if __name__ == "__main__":
     driver.__del__()
     print("Driver released")
     
-    print("Active threads after join:")
-    print(threading.enumerate())
-
-    print("all threads have completed")
