@@ -17,13 +17,21 @@ def get_navigation_state(driver, state):
     """
     current_state = state
     obst = asyncio.run(driver.get_prox_horizontal())
-    if state == 1:
+    ground = asyncio.run(driver.get_prox_ground())
+    # state = 0 -> global navigation
+    # state = 1 -> local navigation
+    # state = 2 -> kidnapping
+    if ground[0] == 0 or ground[1] == 0:
+        current_state = 2
+    elif state == 1:
         if obst[0] < obstThrL and obst[1] < obstThrL and obst[2] < obstThrL and obst[3] < obstThrL and obst[4] < obstThrL:
             driver.move(40)
             current_state = 0
     elif state == 0:
         if obst[0] > obstThrH or obst[1] > obstThrH or obst[2] > obstThrH or obst[3] > obstThrH or obst[4] > obstThrH:
             current_state = 1
+    elif state == 2:
+        current_state = 2
     return current_state, obst
 
 def calculate_new_motor_speed(obst):

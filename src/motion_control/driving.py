@@ -17,7 +17,8 @@ class Driving:
         aw(self.node.unlock())
         print("Thymio connected:", self.node)
         aw(self.node.lock())
-        self.prox = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
+        self.prox_horizontal = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
+        self.prox_ground = [1000, 1000]
         self.sensor_scale = 200  # Scale of the proximity sensors
         self.pid = PID(60, 0, 0, setpoint=0)
         aw(self.initialize_node_listeners())
@@ -37,7 +38,9 @@ class Driving:
         """
         try:
             if "prox.horizontal" in variables:
-                self.prox = list(variables["prox.horizontal"])
+                self.prox_horizontal = list(variables["prox.horizontal"])
+            if "prox.ground.reflected" in variables:
+                self.prox_ground = list(variables["prox.ground.reflected"])
         except KeyError:
             pass
  
@@ -50,11 +53,21 @@ class Driving:
         """
         await self.client.sleep(0.1)  # Wait for the latest values to be updated
         # print(f"Returning proximity sensor values: {self.prox}")
-        self.prox = [self.prox[0] // self.sensor_scale, self.prox[1] // self.sensor_scale, self.prox[2] // self.sensor_scale, self.prox[3] // self.sensor_scale, self.prox[4] // self.sensor_scale]
-        return self.prox
+        self.prox_horizontal = [self.prox_horizontal[0] // self.sensor_scale, self.prox_horizontal[1] // self.sensor_scale, self.prox_horizontal[2] // self.sensor_scale, self.prox_horizontal[3] // self.sensor_scale, self.prox_horizontal[4] // self.sensor_scale]
+        return self.prox_horizontal
+    
+    async def get_prox_ground(self):
+        """
+        Returns the latest ground proximity sensor values.
+
+        Outputs:
+        - prox_ground: List of the ground proximity sensor values
+        """
+        await self.client.sleep(0.1)  # Wait for the latest values to be updated
+        return self.prox_ground
 
     def __del__(self):
-        aw(self.node.lock())
+        aw(self.node.unlock())
         aw(self.node.stop())
         self.client.close()
         print("Thymio connection closed.")
@@ -107,6 +120,7 @@ class Driving:
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
         }
+        # TODO: define mapping target speed to speed in mm/s as global variable and justify it
         self.r_speed = right_speed / 3 
         self.l_speed = left_speed  / 3
         aw(self.node.set_variables(v))
@@ -123,13 +137,13 @@ class Driving:
         if angle >= 0:
             duration = abs((angle)*scaling_factor)  
             self.execute_command(-speed, speed, duration)
-            print(f"Turning {angle} rad")
+            # print(f"Turning {angle} rad")
         
 
         elif angle < 0:
             duration = abs((angle)*scaling_factor)
             self.execute_command(speed, -speed, duration)
-            print(f"Turning {angle} rad")
+            # print(f"Turning {angle} rad")
 
     # TODO: Function not used, remove (or maybe use for local avoidance)?
     def move(self, distance):
