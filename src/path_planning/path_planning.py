@@ -211,8 +211,6 @@ def visibility_graph_simple(checkpoints, inflated_grid):
     return filtered_checkpoints
 
 
-
-
 def get_checkpoints(map, start, goal, px2mm, plot=False):
     # Define robot size
     robot_radius = 8
@@ -247,6 +245,9 @@ def get_checkpoints(map, start, goal, px2mm, plot=False):
     if plot:
         plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
+
+
+# BELOW CODE TO BE DELETED? 
 
 # map_shape = (240, 350)
 # grid = np.zeros(map_shape)
