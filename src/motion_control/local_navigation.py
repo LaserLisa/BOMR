@@ -2,8 +2,8 @@ import asyncio
 
 obstThrL = 10          # low obstacle threshold to switch state local->global (equivalent to 2000)
 obstThrH = 20          # high obstacle threshold to switch state global->local (equivalent to 4000)
-w_l = [7,  5, -5, -5, -7] # weights for the left motor
-w_r = [-7, -5, -5,  5,  7] # weights for the right motor
+w_l = [6, 5, -5, -5, -6]  # weights for left motor
+w_r = [-6, -5, -5, 5, 6]  # weights for right motor
 
 def get_navigation_state(driver, state):
     """
@@ -19,7 +19,7 @@ def get_navigation_state(driver, state):
     obst = asyncio.run(driver.get_prox_horizontal())
     if state == 1:
         if obst[0] < obstThrL and obst[1] < obstThrL and obst[2] < obstThrL and obst[3] < obstThrL and obst[4] < obstThrL:
-            driver.move(50)
+            driver.move(40)
             current_state = 0
     elif state == 0:
         if obst[0] > obstThrH or obst[1] > obstThrH or obst[2] > obstThrH or obst[3] > obstThrH or obst[4] > obstThrH:
