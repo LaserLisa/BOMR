@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import threading
+import os
 
 from src.vision import camera
 import src.path_planning.path_planning as pp
@@ -143,4 +144,5 @@ if __name__ == "__main__":
     print("Camera released")
     driver.__del__()
     print("Driver released")
+    os.kill(os.getpid(), 9)
     
