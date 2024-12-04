@@ -109,8 +109,8 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list,
         for i in range(len(checkpoints)):
             if DEBUG:
                 print(f"Moving to checkpoint: {checkpoints[i]}")
-
             while not checkpoint_reached(checkpoints[i], robot_pose[0]):
+                start_time = time.time()
                 # Check if the navigation state should be switched
                 state, obst = ln.get_navigation_state(driver, state)
 
@@ -127,6 +127,7 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list,
 
                 # update robot pose by vision + kalman
                 robot_pose = ekf.get_robot_pose()
+                print(f"time elapsed: {time.time() - start_time}\r", end="")
             if DEBUG:
                 print(f"Checkpoint {i} reached")
 

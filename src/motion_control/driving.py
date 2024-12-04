@@ -197,8 +197,9 @@ class Driving:
 
         # If the angle is too large, turn in place, here we don't do local avoidance
         # as we turn on the spot
-        if abs(angle) > np.deg2rad(25):
-            self.turn(angle)
+        if abs(angle) > np.deg2rad(10):
+            speed = int(30 * np.sign(angle) + angle * 120)
+            self.set_motor_speeds(-speed, speed)
         
         # Otherwise, move forward with a P(ID) control to steer towards the checkpoint
         else:
