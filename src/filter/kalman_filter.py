@@ -3,7 +3,7 @@ Extended_Kalman_Filter.py
 '''
 import math
 import numpy as np
-
+#from .orientation import Orientation 
 
 class Extended_Kalman_Filter():
     def __init__(self, pix2mm, robot_pose_px, time):
@@ -32,6 +32,17 @@ class Extended_Kalman_Filter():
                      0,       # variance of yaw angle          in rad^2
                      6.15,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
+        self.orientation_tracker = Orientation(window_size=10)
+
+    #def update_orientation(self, new_position):
+    #"""
+    #Updates the orientation based on the new position.
+    
+    #Args:
+    #    new_position (np.ndarray): The new (x, y) position.
+    #"""
+    #self.orientation_tracker.update(new_position)
+   
 
     def update_time(self, time):
         '''
@@ -194,6 +205,7 @@ class Extended_Kalman_Filter():
         if np.isnan(y).any():
             #print("Camera measurement unavailable, skipping update step.")
             # Skip the measurement update step and only return the prediction
+            #Mu[2] = self.orientation_tracker.value
             Mu_est = Mu_pred  # No update to the state from the camera
             Sigma_est = Sigma_pred  # No update to the covariance
         else: 
