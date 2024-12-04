@@ -86,7 +86,7 @@ class Extended_Kalman_Filter():
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
         v = (1/self.scaling_factor) * (speed_r + speed_l)/2
-        theta_dot = (speed_r - speed_l)/self.wheel_distance
+        theta_dot = (speed_r - speed_l)/(self.wheel_distance + 4) 
         u = np.array([v, theta_dot]).T
         return u
 
