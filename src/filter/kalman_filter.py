@@ -35,13 +35,13 @@ class Extended_Kalman_Filter():
         self.orientation_tracker = Orientation(window_size=10)
 
     def update_orientation(self, new_position):
-    """
-    Updates the orientation based on the new position.
-    
-    Args:
-        new_position (np.ndarray): The new (x, y) position.
-    """
-    self.orientation_tracker.update(new_position)
+        """
+        Updates the orientation based on the new position.
+        
+        Args:
+            new_position (np.ndarray): The new (x, y) position.
+        """
+        self.orientation_tracker.update(new_position)
    
 
     def update_time(self, time):
