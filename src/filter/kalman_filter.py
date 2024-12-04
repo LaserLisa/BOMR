@@ -1,8 +1,9 @@
-'''
+f'''
 Extended_Kalman_Filter.py
 '''
 import math
 import numpy as np
+from src.filter.orientation import Orientation 
 
 class Extended_Kalman_Filter():
     def __init__(self, pix2mm, robot_pose_px, time):
@@ -16,7 +17,7 @@ class Extended_Kalman_Filter():
         self.old_time = time 
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = pix2mm #[mm/pxl]
-        self.wheel_distance = 98
+        self.wheel_distance = 100
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
         self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
@@ -31,6 +32,17 @@ class Extended_Kalman_Filter():
                      0,       # variance of yaw angle          in rad^2
                      6.15,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
+        self.orientation_tracker = Orientation(window_size=10)
+
+    def update_orientation(self, new_position):
+    """
+    Updates the orientation based on the new position.
+    
+    Args:
+        new_position (np.ndarray): The new (x, y) position.
+    """
+    self.orientation_tracker.update(new_position)
+   
 
     def update_time(self, time):
         '''
@@ -193,6 +205,7 @@ class Extended_Kalman_Filter():
         if np.isnan(y).any():
             #print("Camera measurement unavailable, skipping update step.")
             # Skip the measurement update step and only return the prediction
+            #Mu[2] = self.orientation_tracker.value
             Mu_est = Mu_pred  # No update to the state from the camera
             Sigma_est = Sigma_pred  # No update to the covariance
         else: 
@@ -206,6 +219,7 @@ class Extended_Kalman_Filter():
             Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
+        #self.orientation_tracker.update(np.array([self.Mu[0], self.Mu[1]))
         self.Mu[3], self.Mu[4] = 0,0 
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
