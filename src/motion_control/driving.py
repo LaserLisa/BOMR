@@ -17,8 +17,9 @@ class Driving:
         aw(self.node.unlock())
         print("Thymio connected:", self.node)
         aw(self.node.lock())
-        self.prox = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
-        self.sensor_scale = 200  # Scale of the proximity sensors
+        self.prox_horizontal = [0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
+        self.prox_ground = [1000, 1000]
+        self.sensor_scale = 400  # Scale of the proximity sensors
         self.pid = PID(60, 0, 0, setpoint=0)
         aw(self.initialize_node_listeners())
 
@@ -50,8 +51,19 @@ class Driving:
         """
         await self.client.sleep(0.1)  # Wait for the latest values to be updated
         # print(f"Returning proximity sensor values: {self.prox}")
-        self.prox = [self.prox[0] // self.sensor_scale, self.prox[1] // self.sensor_scale, self.prox[2] // self.sensor_scale, self.prox[3] // self.sensor_scale, self.prox[4] // self.sensor_scale]
-        return self.prox
+        self.prox_horizontal = self.prox_horizontal[:5]
+        self.prox_horizontal = [x // self.sensor_scale for x in self.prox_horizontal]
+        return self.prox_horizontal
+    
+    async def get_prox_ground(self):
+        """
+        Returns the latest ground proximity sensor values.
+
+        Outputs:
+        - prox_ground: List of the ground proximity sensor values
+        """
+        await self.client.sleep(0.1)  # Wait for the latest values to be updated
+        return self.prox_ground
 
     def __del__(self):
         aw(self.node.lock())
