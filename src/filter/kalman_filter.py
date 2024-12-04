@@ -17,7 +17,7 @@ class Extended_Kalman_Filter():
         self.old_time = time 
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = pix2mm #[mm/pxl]
-        self.wheel_distance = 98
+        self.wheel_distance = 100
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
         self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
