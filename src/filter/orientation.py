@@ -1,3 +1,4 @@
+import numpy as np
 class Orientation:
     """Keeps a moving average of a orientation measurement.
     
