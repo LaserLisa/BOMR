@@ -33,7 +33,7 @@ class Driving:
     def on_variables_changed(self, node, variables):
         """
         Callback function to handle variable updates.
-        Updates proximity sensor values when 'prox.horizontal' changes.
+        Updates proximity sensor values when 'prox.horizontal' or 'prox.ground.reflected' changes.
         This was inspired by this example: https://pypi.org/project/tdmclient/#:~:text=To%20read%20variables,typing%20control%2DC.
         """
         try:
@@ -52,7 +52,6 @@ class Driving:
         - prox_horizontal: List of the front 5 horizontal proximity sensor values
         """
         await self.client.sleep(0.1)  # Wait for the latest values to be updated
-        # print(f"Returning proximity sensor values: {self.prox}")
         self.prox_horizontal = self.prox_horizontal[:5]
         self.prox_horizontal = [x // self.sensor_scale for x in self.prox_horizontal]
         return self.prox_horizontal
@@ -146,7 +145,6 @@ class Driving:
             self.execute_command(speed, -speed, duration)
             # print(f"Turning {angle} rad")
 
-    # TODO: Function not used, remove (or maybe use for local avoidance)?
     def move(self, distance):
         """
         Move the robot forward for a given distance in millimeters.
