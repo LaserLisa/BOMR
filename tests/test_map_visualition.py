@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.vision import camera
+from src.vision import camera, helpers
 from src.vision.measurements import Position, Orientation
 
 MAP_SIZE_MM = [1050, 720]
@@ -18,11 +18,15 @@ destination_points = np.array([
     ], dtype="float32")
 # Open the default camera
 print("Initalizing camera...")
-cam = camera.Camera(1)
+cam = camera.Camera(0, window_size=2)
 pix2mm = MAP_SIZE_MM[0]/cam._hyperparams.map_size[0]
 
 print("Intializing map...")
 cam._corners = destination_points
+cam.read()
+cam._warped = helpers.perspective_transform(cam._frame, cam._corners,
+                                            cam._hyperparams.map_size[0],
+                                            cam._hyperparams.map_size[1])
 cam._robot_position = Position()
 cam._robot_orientation = Orientation()
 cam._robot_position.value = np.array([int(width/2), int(height/2)])
