@@ -59,7 +59,9 @@ def dump_yaml(data):
         yaml.dump(data, outfile, default_flow_style=False)
 
 # https://stackoverflow.com/questions/1773805/how-can-i-parse-a-yaml-file-in-python
-def read_yaml():
+def read_yaml(path: str = None):
+    if path:
+        YAML_PATH = path
     with open(YAML_PATH) as stream:
         try:
             return yaml.safe_load(stream)

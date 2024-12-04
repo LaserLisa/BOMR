@@ -1,0 +1,18 @@
+goal:
+  area: 500
+  blue: 103
+  green: 85
+  kernel_size: 4
+  red: 122
+map_size:
+- 350
+- 240
+map_size_mm:
+- 1050
+- 720
+obstacles:
+  area: 991
+  blue: 83
+  green: 71
+  kernel_size: 3
+  red: 59
