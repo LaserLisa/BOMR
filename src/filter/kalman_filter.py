@@ -17,7 +17,7 @@ class Extended_Kalman_Filter():
         self.old_time = time 
         self.input_speed = 14 #[mm/s]
         self.scaling_factor = pix2mm #[mm/pxl]
-        self.wheel_distance = 98
+        self.wheel_distance = 100
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
         self.Mu = [robot_pose_px[0][0], robot_pose_px[0][1], robot_pose_px[1], 0, 0]
@@ -34,14 +34,14 @@ class Extended_Kalman_Filter():
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
         self.orientation_tracker = Orientation(window_size=10)
 
-    #def update_orientation(self, new_position):
-    #"""
-    #Updates the orientation based on the new position.
+    def update_orientation(self, new_position):
+    """
+    Updates the orientation based on the new position.
     
-    #Args:
-    #    new_position (np.ndarray): The new (x, y) position.
-    #"""
-    #self.orientation_tracker.update(new_position)
+    Args:
+        new_position (np.ndarray): The new (x, y) position.
+    """
+    self.orientation_tracker.update(new_position)
    
 
     def update_time(self, time):
@@ -86,7 +86,7 @@ class Extended_Kalman_Filter():
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
         v = (1/self.scaling_factor) * (speed_r + speed_l)/2
-        theta_dot = (speed_r - speed_l)/self.wheel_distance
+        theta_dot = (speed_r - speed_l)/(self.wheel_distance + 4) 
         u = np.array([v, theta_dot]).T
         return u
 

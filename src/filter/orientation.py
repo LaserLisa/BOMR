@@ -15,7 +15,7 @@ class Orientation:
                                rolling average.
         """
         self.value: np.ndarray = np.array([np.nan])
-        self._hist: np.ndarray = np.ones((window_size,2))*np.nan
+        self._hist: np.ndarray = np.ones((window_size,1))*np.nan
 
 
     def update(self, new_position: np.ndarray | list):

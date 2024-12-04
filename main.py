@@ -20,7 +20,7 @@ DEBUG = True          # global variable to enable/disable debug messages
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     """Initializes the camera, Thymio and the Extended Kalman Filter"""
     print("Initializing camera...")
-    cam = camera.Camera(0, window_size=2)
+    cam = camera.Camera(1, window_size=2)
     pix2mm = cam.pixel2mm
     print(pix2mm)
 
@@ -119,7 +119,7 @@ def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list,
                 if state == 0: #global navigation
                     driver.move_to_checkpoint(robot_pose, checkpoints[i])
                 elif state ==1: #local navigation
-                    motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst)
+                    motor_left_speed, motor_right_speed = ln.calculate_new_motors_speed(obst)
                     driver.set_motor_speeds(motor_left_speed, motor_right_speed)
                 elif state == 2:
                     driver.stop()
