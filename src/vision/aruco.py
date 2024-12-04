@@ -1,3 +1,6 @@
+"""Script to generate an ArUco marker and save it as an image."""
+# mostly taken from:
+# https://www.geeksforgeeks.org/detecting-aruco-markers-with-opencv-and-python-1/#generating-aruco-markers
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
