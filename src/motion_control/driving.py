@@ -20,7 +20,7 @@ class Driving:
         self.prox_horizontal = [0, 0, 0, 0, 0, 0, 0]  # Initial horizontal proximity sensor values
         self.prox_ground = [1000, 1000]
         self.sensor_scale = 200  # Scale of the proximity sensors
-        self.pid = PID(60, 0, 0, setpoint=0)
+        self.pid = PID(80, 0, 0, setpoint=0)
         aw(self.initialize_node_listeners())
 
     async def initialize_node_listeners(self):
@@ -203,8 +203,8 @@ class Driving:
         # Otherwise, move forward with a P(ID) control to steer towards the checkpoint
         else:
             gain = self.pid(angle)
-            l_speed = 100 + gain
-            r_speed = 100 - gain
+            l_speed = 150 + gain
+            r_speed = 150 - gain
 
             self.set_motor_speeds(int(l_speed), int(r_speed))
 
