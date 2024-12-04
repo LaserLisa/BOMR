@@ -1,4 +1,4 @@
-'''
+f'''
 Extended_Kalman_Filter.py
 '''
 import math
@@ -219,6 +219,7 @@ class Extended_Kalman_Filter():
             Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
+        #self.orientation_tracker.update(np.array([self.Mu[0], self.Mu[1]))
         self.Mu[3], self.Mu[4] = 0,0 
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
