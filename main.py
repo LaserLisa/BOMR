@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import time
 import threading
+import os
+import asyncio
 
 from src.vision import camera
 import src.path_planning.path_planning as pp
@@ -12,8 +14,11 @@ import src.motion_control.local_navigation as ln
 
 running = False        # global variable to enable disable threads
 DEBUG = True          # global variable to enable/disable debug messages
-state = 0              # global variable to store the state of the navigation: "global"=0 or "local"=1
+
+
+
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
+    """Initializes the camera, Thymio and the Extended Kalman Filter"""
     print("Initializing camera...")
     cam = camera.Camera(0, window_size=2)
     pix2mm = cam.pixel2mm
@@ -32,6 +37,7 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     return cam, driver, ekf, checkpoints
 
 def init_map(cam: camera.Camera) -> list:
+    """"Initializes the map and returns the checkpoints of the path"""
     print("Initializing map...")
     cam.initialize_map(show=True, show_all=False)
     
@@ -42,6 +48,22 @@ def init_map(cam: camera.Camera) -> list:
     checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, cam.pixel2mm, 
                                      plot=True)
     print(checkpoints)
+    cam.set_checkpoints(checkpoints)
+    return checkpoints
+
+def recalculate_checkpoints(cam: camera.Camera, driver: Driving) -> list:
+    """ Waits for the robot to be placed on the ground and recalculates the checkpoints"""
+    print("Place robot again on ground...")
+    robot_pose_px = cam.get_robot_pose()
+    ground = asyncio.run(driver.get_prox_ground())
+    while np.isnan(robot_pose_px[0]).any() or (ground[0] == 0 or ground[1] == 0):
+        robot_pose_px = cam.get_robot_pose()
+        ground = asyncio.run(driver.get_prox_ground())
+    map = cam.get_map()
+    goal = cam.get_goal_position()
+    print("Getting checkpoints...")
+    checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, cam.pixel2mm, 
+                                     plot=True)
     cam.set_checkpoints(checkpoints)
     return checkpoints
 
@@ -77,31 +99,44 @@ def update_camera_and_kalman(cam: camera.Camera):
         cv2.waitKey(1) 
 
 
-def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list, ekf: Extended_Kalman_Filter):
-    global running, state, obst
+def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list, 
+                   ekf: Extended_Kalman_Filter):
+    global running
     print("Starting motion_control thread")
-    robot_pose = camera.get_robot_pose()
-
-    for i in range(len(checkpoints)):
-        if DEBUG:
-           print(f"Moving to checkpoint: {checkpoints[i]}")
-
-        while not checkpoint_reached(checkpoints[i], robot_pose[0]):
-            # Check if the navigation state should be switched
-            state, obst = ln.get_navigation_state(driver, state)
-
+    while True:
+        robot_pose = camera.get_robot_pose()
+        state = 0
+        for i in range(len(checkpoints)):
             if DEBUG:
-                print(f"State: {state}\r", end="")
-            if state == 0: #global navigation
-                driver.move_to_checkpoint(robot_pose, checkpoints[i])
-            else: #local navigation
-                motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst)
-                driver.set_motor_speeds(motor_left_speed, motor_right_speed)
+                print(f"Moving to checkpoint: {checkpoints[i]}")
 
-            # update robot pose by vision + kalman
-            robot_pose = ekf.get_robot_pose()
-        if DEBUG:
-            print(f"Checkpoint {i} reached")
+            while not checkpoint_reached(checkpoints[i], robot_pose[0]):
+                # Check if the navigation state should be switched
+                state, obst = ln.get_navigation_state(driver, state)
+
+                if DEBUG:
+                    print(f"State: {state}\r", end="")
+                if state == 0: #global navigation
+                    driver.move_to_checkpoint(robot_pose, checkpoints[i])
+                elif state ==1: #local navigation
+                    motor_left_speed, motor_right_speed = ln.calculate_new_motor_speed(obst)
+                    driver.set_motor_speeds(motor_left_speed, motor_right_speed)
+                elif state == 2:
+                    driver.stop()
+                    break
+
+                # update robot pose by vision + kalman
+                robot_pose = ekf.get_robot_pose()
+            if DEBUG:
+                print(f"Checkpoint {i} reached")
+
+        if state == 2:
+            print("Kidnapping")
+            checkpoints = recalculate_checkpoints(camera, driver)
+        else:
+            break
+
+
     driver.stop()
     print("Goal reached")
     
@@ -143,4 +178,5 @@ if __name__ == "__main__":
     print("Camera released")
     driver.__del__()
     print("Driver released")
+    os.kill(os.getpid(), 9)
     

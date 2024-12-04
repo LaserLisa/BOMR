@@ -37,6 +37,8 @@ def get_navigation_state(driver, state):
             nb_active_sensors = sum(sensor > 0 for sensor in obst)
             print("nb of active sensors: ", nb_active_sensors)
             current_state = 1
+    elif state == 2:
+        current_state = 2
     return current_state, obst
 
 def calculate_new_motor_speed(obst):

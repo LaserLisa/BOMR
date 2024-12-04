@@ -108,13 +108,14 @@ class Camera(cv2.VideoCapture):
         # draw obstacles
         cv2.drawContours(overlay, self._obstacles_contours, -1, (255, 255, 255), cv2.FILLED)
         def draw_robot(position, angle, color):
-            radius = int(60/self.pixel2mm)
+            # 80mm is the distance from center of rotation to front of robot
+            radius = int(80/self.pixel2mm) 
             position = position.astype(int)
             cv2.circle(overlay, position, radius, color, 2)
-            arrow_start_x = int(position[0] + radius * np.cos(angle))
-            arrow_start_y = int(position[1] - radius * np.sin(angle))
-            arrow_end_x = int(arrow_start_x + 10 * np.cos(angle))
-            arrow_end_y = int(arrow_start_y - 10 * np.sin(angle))
+            arrow_start_x = int(position[0])
+            arrow_start_y = int(position[1])
+            arrow_end_x = int(arrow_start_x + (10+radius) * np.cos(angle))
+            arrow_end_y = int(arrow_start_y - (10+radius) * np.sin(angle))
             cv2.arrowedLine(overlay, (arrow_start_x, arrow_start_y), 
                             (arrow_end_x, arrow_end_y), color, 2)
         
@@ -141,6 +142,8 @@ class Camera(cv2.VideoCapture):
             angle = self._robot_orientation.value
             draw_robot(position, angle, (0, 255, 255))
         map = cv2.addWeighted(overlay, alpha, map, 1-alpha, 0)
+        # resize map
+        map = cv2.resize(map, (0, 0), fx=2, fy=2)
         cv2.imshow('map', map)
 
 

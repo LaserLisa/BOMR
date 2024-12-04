@@ -1,9 +1,9 @@
 goal:
   area: 500
-  blue: 88
-  green: 92
+  blue: 103
+  green: 85
   kernel_size: 4
-  red: 138
+  red: 122
 map_size:
 - 350
 - 240

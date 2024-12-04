@@ -38,7 +38,9 @@ class Driving:
         """
         try:
             if "prox.horizontal" in variables:
-                self.prox = list(variables["prox.horizontal"])
+                self.prox_horizontal = list(variables["prox.horizontal"])
+            if "prox.ground.reflected" in variables:
+                self.prox_ground = list(variables["prox.ground.reflected"])
         except KeyError:
             pass
  
@@ -66,7 +68,7 @@ class Driving:
         return self.prox_ground
 
     def __del__(self):
-        aw(self.node.lock())
+        aw(self.node.unlock())
         aw(self.node.stop())
         self.client.close()
         print("Thymio connection closed.")
@@ -119,6 +121,7 @@ class Driving:
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
         }
+        # TODO: define mapping target speed to speed in mm/s as global variable and justify it
         self.r_speed = right_speed / 3 
         self.l_speed = left_speed  / 3
         aw(self.node.set_variables(v))
@@ -135,13 +138,13 @@ class Driving:
         if angle >= 0:
             duration = abs((angle)*scaling_factor)  
             self.execute_command(-speed, speed, duration)
-            print(f"Turning {angle} rad")
+            # print(f"Turning {angle} rad")
         
 
         elif angle < 0:
             duration = abs((angle)*scaling_factor)
             self.execute_command(speed, -speed, duration)
-            print(f"Turning {angle} rad")
+            # print(f"Turning {angle} rad")
 
     # TODO: Function not used, remove (or maybe use for local avoidance)?
     def move(self, distance):
