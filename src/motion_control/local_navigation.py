@@ -33,7 +33,7 @@ def get_navigation_state(driver, state):
     elif state == 1:
         if all(sensor < obstThrL for sensor in obst):
             if nb_active_sensors != 0:
-                # Move by the number of active sensors + the width of the robot
+                # Move by the number of active sensors + half of the width of the robot
                 driver.move(60 + (10 * nb_active_sensors))
             
                 # Smoothing step to avoid repeated state switching
@@ -41,7 +41,8 @@ def get_navigation_state(driver, state):
                     driver.turn(math.pi/4)
                 elif previous_direction == 'right':
                     driver.turn(-math.pi/4)
-                driver.move(100) 
+                # Move by the width of the robot
+                driver.move(120) 
 
                 nb_active_sensors = 0
 
