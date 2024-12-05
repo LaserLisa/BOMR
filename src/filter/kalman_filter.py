@@ -212,7 +212,7 @@ class Extended_Kalman_Filter():
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
         self.update_time (time)
-        self.extended_kalman(self.u_input(l_speed, r_speed),self.system_state(robot_pose_px))
+        self.extended_kalman(self.U(l_speed, r_speed),self.system_state(robot_pose_px))
         x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
         robot_pose = (np.array([x, y]), theta)
         return robot_pose
