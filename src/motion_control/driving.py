@@ -21,6 +21,7 @@ class Driving:
         self.prox_ground = [1000, 1000]
         self.sensor_scale = 400  # Scale of the proximity sensors
         self.pid = PID(80, 0, 0, setpoint=0)
+        self.conversion_factor = 2.8  # Conversion factor from mm/s to motor speed
         aw(self.initialize_node_listeners())
 
     async def initialize_node_listeners(self):
@@ -81,8 +82,8 @@ class Driving:
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
         }
-        self.r_speed = right_speed / 3 
-        self.l_speed = left_speed  / 3
+        self.r_speed = right_speed / self.conversion_factor
+        self.l_speed = left_speed  / self.conversion_factor
         self.time = duration 
         aw(self.node.set_variables(v))
 
@@ -121,8 +122,8 @@ class Driving:
             "motor.right.target": [right_speed],
         }
         # TODO: define mapping target speed to speed in mm/s as global variable and justify it
-        self.r_speed = right_speed / 3 
-        self.l_speed = left_speed  / 3
+        self.r_speed = right_speed / self.conversion_factor
+        self.l_speed = left_speed  / self.conversion_factor
         aw(self.node.set_variables(v))
 
     def turn(self, angle):
