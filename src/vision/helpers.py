@@ -39,10 +39,16 @@ class Hyperparameters:
         self.goal = Thresholds(dict["goal"])
 
 
-# Chat gpt
-def object_to_dict(obj):
+def object_to_dict(obj: Thresholds | Hyperparameters) -> dict:
+    """"
+    Helper function to convert the hyperparameters and threshold class to a nested 
+    dictionary.
+
+    Args:
+        obj (Thresholds | Hyperparameters): The object to convert to a dictionary
+    """
     if isinstance(obj, Thresholds):
-        return obj.__dict__  # Convert Thresholds object to dict
+        return obj.__dict__
     elif isinstance(obj, Hyperparameters):
         return {
             "map_size": obj.map_size,
@@ -54,7 +60,8 @@ def object_to_dict(obj):
         return obj 
     
 
-def dump_yaml(data):
+def dump_yaml(data: dict):
+    """ Saves a dictionary to a yaml file"""
     with open(YAML_PATH, 'w') as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
 
@@ -88,10 +95,8 @@ def perspective_transform(img: np.ndarray, corners: np.ndarray, width, height) -
     [width - 1, height - 1],
     ], dtype="float32")
 
-    # Compute the perspective transformation matrix
-    matrix = cv2.getPerspectiveTransform(corners, destination_points)
 
-    # Perform the perspective warp
+    matrix = cv2.getPerspectiveTransform(corners, destination_points)
     warped = cv2.warpPerspective(img, matrix, (width, height))
 
     return warped

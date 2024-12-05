@@ -1,14 +1,22 @@
-# Input : matrice 80 x 100 where obstacles are represented by 1 and free space is represented by 0
-#         start and goal coordinates (l, c) where l is the line and c is the column
-
-# Output: optimal path from start to goal coordinates
-
 import numpy as np
 import heapq
 import matplotlib.pyplot as plt
 
-
 def a_star(grid, start, goal):
+    """
+    Find the optimal path from start to goal on a grid using the A* algorithm.
+
+    Args:
+        grid (numpy.ndarray): Binary grid where 0 is free space and 1 is an obstacle.
+        start (tuple): Start coordinates as (row, col).
+        goal (tuple): Goal coordinates as (row, col).
+
+    Returns:
+        list: List of (row, col) tuples representing the path from start to goal, or an empty list if the path is blocked.
+
+    Notes:
+        - This code is inspired from this tutorial: https://llego.dev/posts/implementing-the-a-search-algorithm-python/
+    """
     rows, cols = grid.shape
     directions = [
         (0, 1), (1, 0), (0, -1), (-1, 0),
@@ -52,6 +60,16 @@ def a_star(grid, start, goal):
     return []
 
 def inflate_obstacles(grid, robot_radius):
+    """ 
+    Inflate the obstacles in the grid by the robot radius.
+
+    Args:
+        grid (numpy.ndarray): Binary grid where 0 is free space and 1 is an obstacle.
+        robot_radius (int): Radius of the robot in pixels.
+
+    Returns:
+        numpy.ndarray: Inflated grid where obstacles are marked as 1.
+    """
     rows, cols = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
@@ -64,23 +82,44 @@ def inflate_obstacles(grid, robot_radius):
                             inflated_grid[nr, nc] = 1
     return inflated_grid
 
-def inflate_borders(grid, robot_width):
+def inflate_borders(grid, robot_radius):
+    """
+    Inflate the borders of the grid by the robot width.
+
+    Args:
+        grid (numpy.ndarray): Binary grid where 0 is free space and 1 is an obstacle.
+        robot_radius (int): Width of the robot in pixels.
+
+    Returns:
+        numpy.ndarray: Inflated grid where borders are marked as 1.
+    """
     (rows, cols) = grid.shape
     inflated_grid = grid.copy()
     for r in range(rows):
         for c in range(cols):
-            if r < robot_width or r >= rows - robot_width or c < robot_width or c >= cols - robot_width:
+            if r < robot_radius or r >= rows - robot_radius or c < robot_radius or c >= cols - robot_radius:
                 inflated_grid[r, c] = 1
     return inflated_grid
 
 def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=None, start=None, goal=None):
+    """
+    Plot the grid with obstacles, inflated obstacles, checkpoints, and path.
+
+    Args:
+        grid (numpy.ndarray): Binary grid where 0 is free space and 1 is an obstacle.
+        inflated_grid (numpy.ndarray): Inflated grid where obstacles are marked as 1.
+        checkpoints (list): List of checkpoints as [x, y] pairs.
+        path (list): List of [x, y] coordinates representing the path.
+        start (tuple): Start coordinates as (row, col).
+        goal (tuple): Goal coordinates as (row, col).
+    """
     rows, cols = grid.shape
     fig, ax = plt.subplots(figsize=(12, 10))
 
     # Create a visual grid with color codes
     display_grid = np.zeros_like(grid, dtype=float)
-    display_grid[inflated_grid == 0] = 0.5  # Default free space as light grey
-    display_grid[grid == 1] = 0  # Original obstacles as black
+    display_grid[inflated_grid == 0] = 0.5                  # Default free space as light grey
+    display_grid[grid == 1] = 0                             # Original obstacles as black
     display_grid[(inflated_grid == 1) & (grid == 0)] = 0.2  # Contours as dark grey
 
     # Plot the grid
@@ -119,7 +158,6 @@ def plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, p
     ax.legend()
     plt.show()
 
-
 def bresenham_line(x1, y1, x2, y2):
     """
     Generate all the points on a straight line between two points using Bresenham's algorithm.
@@ -151,7 +189,6 @@ def bresenham_line(x1, y1, x2, y2):
             y1 += sy
 
     return points
-
 
 def is_visible(point1, point2, inflated_grid):
     """
@@ -210,8 +247,20 @@ def visibility_graph_simple(checkpoints, inflated_grid):
 
     return filtered_checkpoints
 
-
 def get_checkpoints(map, start, goal, px2mm, plot=False):
+    """
+    Compute the checkpoints for the robot to follow from start to goal.
+
+    Args:
+        map (numpy.ndarray): Binary grid where 0 is free space and 1 is an obstacle.
+        start (tuple): Start coordinates as (row, col).
+        goal (tuple): Goal coordinates as (row, col).
+        px2mm (float): Conversion factor from pixels to millimeters.
+        plot (bool): Whether to plot the grid with checkpoints.
+
+    Returns:
+        list: List of checkpoints as [x, y] pairs.
+    """
     # Define robot size
     robot_radius = 8
     
@@ -226,13 +275,14 @@ def get_checkpoints(map, start, goal, px2mm, plot=False):
     smaller_inflated_grid = inflate_obstacles(map, robot_radius-1)
     smaller_inflated_grid = inflate_borders(smaller_inflated_grid, robot_radius-1)
     
-
     # Run A* algorithm on the inflated grid
     path = a_star(inflated_grid, start, goal)
 
     if not path:
         return []
     checkpoints = [[path[0][1], path[0][0]]]
+
+    # Only keep checkpoints that represent a change in direction
     for i in range(1, len(path) - 1):
         x0, y0 = path[i - 1]
         x1, y1 = path[i]
@@ -246,23 +296,18 @@ def get_checkpoints(map, start, goal, px2mm, plot=False):
         plot_grid_with_inflation_and_checkpoints(map, smaller_inflated_grid, checkpoints, path=path, start=start, goal=goal)
     return checkpoints
 
+"""
+Text to add in report:
+We receive from the vision system a binary grid representing the environment, where obstacles are marked as 1 and free space as 0.
+Before finding the optimal path between the start and goal coordinates, we first need to determine which grid cells we can traverse. 
+Since, the robot's position is determined by it's center, we inflate the obstacles by the robot's radius to ensure that it does not collide with any obstacles.
 
-# BELOW CODE TO BE DELETED? 
+Next, we use the A* algorithm to compute the optimal path between the start and goal coordinates. 
+The algorithm returns a series of grid cells that the robot should traverse. 
+However, not all of these grid cells are necessary for defining the path; many are redundant as they lie along straight segments of the path without any change in direction.
 
-# map_shape = (240, 350)
-# grid = np.zeros(map_shape)
-# grid[100:150, 50:80] = 1  # Example obstacle
-# 
-# start = np.array([252.0, 110.5])  # Note: x and y will be swapped
-# goal = np.array([52, 190])
-# 
-# robot_width = 12
-# robot_radius = robot_width // 2
-# 
-# inflated_grid = inflate_obstacles(grid, robot_radius)
-# inflated_grid = inflate_borders(inflated_grid, robot_radius - 1)
-# 
-# path = a_star(inflated_grid, start, goal)
-# checkpoints = get_checkpoints(path, start, goal, 3.0)
-# 
-# plot_grid_with_inflation_and_checkpoints(grid, inflated_grid, checkpoints, path=path, start=start, goal=goal)
+To simplify the path, we filter out the redundant points and retain only the checkpoints that represent a change in direction. 
+For each point, we compute the vectors formed with its neighboring points and check for collinearity using the cross-product. 
+Points that do not result in a direction change are excluded, leaving only the essential checkpoints that guide the robot through turns and direction changes. 
+
+"""

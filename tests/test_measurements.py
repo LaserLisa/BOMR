@@ -13,13 +13,14 @@ if __name__ == "__main__":
                       [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], 
                       [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan]])
     
-    or_t = np.array([0.5, 0.5, 0.5, 0.5, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan,
-                     np.nan, np.nan, np.nan])
+    or_vec_t = np.array([[1,1.6], [1.1,1], [1,.51], [1.3,1], [1,1], [np.nan, np.nan], 
+                         [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], 
+                         [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan]])
 
     pos = Position(window_size)
     orien = Orientation(window_size)
 
     for i in range(len(pos_t)):
         pos.update(pos_t[i])
-        orien.update(or_t[i])
+        orien.update(or_vec_t[i])
         print(f"Time {i}:\t Position: {pos.value}, Orientation: {orien.value}")
