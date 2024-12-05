@@ -3,7 +3,7 @@ Extended_Kalman_Filter.py
 '''
 import math
 import numpy as np
-from src.filter.orientation import Orientation 
+
 
 class Extended_Kalman_Filter():
     def __init__(self, pix2mm, robot_pose_px, time):
@@ -32,7 +32,6 @@ class Extended_Kalman_Filter():
                      0,       # variance of yaw angle          in rad^2
                      5.02,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
-        self.orientation_tracker = Orientation(window_size=10)
 
 
     def update_time(self, time):
@@ -59,12 +58,12 @@ class Extended_Kalman_Filter():
         Q = np.diag([0.04,   # variance of location on x-axis in pxl^2
                     0.04,   # variance of location on y-axis in pxl^2
                     0,       # variance of yaw angle          in rad^2
-                    6.15,    # variance of velocity           in pxl^2/s^2
+                    5.02,    # variance of velocity           in pxl^2/s^2
                     0     # variance of angular velocity   in rad^2/s^2(yaw rate)
                     ])
         return Q
 
-    def u_input(self,speed_l,speed_r):
+    def U(self,speed_l,speed_r):
         '''
         Function that takes the raw speed values of each wheel motor and converts it into
         translation speed and rotation speed with a pixel scaling factor.
@@ -98,7 +97,7 @@ class Extended_Kalman_Filter():
         y = np.dot(C,x) + np.diag(self.R)
         return y
 
-    def system_state(self, robot_pose_px):
+    def measure_state(self, robot_pose_px):
         '''
         Function that analyses the data to return the current measurement state vector.
 
@@ -196,7 +195,6 @@ class Extended_Kalman_Filter():
         if np.isnan(y).any():
             #print("Camera measurement unavailable, skipping update step.")
             # Skip the measurement update step and only return the prediction
-            #Mu[2] = self.orientation_tracker.value
             Mu_est = Mu_pred  # No update to the state from the camera
             Sigma_est = Sigma_pred  # No update to the covariance
         else: 
@@ -207,15 +205,14 @@ class Extended_Kalman_Filter():
         
             #Update Estimated values
             Mu_est = Mu_pred + np.dot(K,(y - self.measure_state(Mu_pred)))
-            Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)*1.00001
+            Sigma_est = np.dot((np.eye(5)-np.dot(K,H)),Sigma_pred)+np.eye(5)
         # Sigma_est[Sigma_est < 1e-5] = 0
         self.Mu, self.Sigma = Mu_est, Sigma_est
-        #self.orientation_tracker.update(np.array([self.Mu[0], self.Mu[1]))
         self.Mu[3], self.Mu[4] = 0,0 
 
     def Kalman_main(self, l_speed, r_speed, time, robot_pose_px):
         self.update_time (time)
-        self.extended_kalman(self.u_input(l_speed, r_speed),self.system_state(robot_pose_px))
+        self.extended_kalman(self.U(l_speed, r_speed),self.measure_state(robot_pose_px))
         x, y, theta = self.Mu[0], self.Mu[1], self.Mu[2]
         robot_pose = (np.array([x, y]), theta)
         return robot_pose
