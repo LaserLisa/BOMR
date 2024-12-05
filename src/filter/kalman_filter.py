@@ -9,14 +9,11 @@ class Extended_Kalman_Filter():
     def __init__(self, pix2mm, robot_pose_px, time):
         '''
         Extended Kalman Filter Noise Covariance matrix.
-        R is the measurement noise covariant matrix. It injects the standard deviation of correct thymio measurement localization
-        by taking into account pixel resolution, image scale and computational errors from our find_robot function.
         '''
         # Covariance for EKF simulation
         self.dt = 0    #[s]
         self.old_time = time 
-        self.input_speed = 14 #[mm/s]
-        self.scaling_factor = pix2mm #[mm/pxl]
+        self.pix_to_mm = pix2mm #[mm/pxl]
         self.wheel_distance = 100
         pxl_var = 0.25
         self.Sigma = np.eye(5)  # Initialize covariance matrix
@@ -47,12 +44,7 @@ class Extended_Kalman_Filter():
         
     def process_cov(self):
         '''
-        Function that determines the current process noise covariance depending on scaling factor.
-        It uses the estimated standard diviation of the motor speeds to determine the process noise expected
-        on thymio predicted system states.
-
-        Input: - scaling_factor : scalar parameter determined by measured pixel distance between identifier dots in pxl
-                                  on the Thymio and the actual real distance in mm.
+        Function that determines the current process noise covariance 
         Output: - Q : 5x5 covariance matrix based on estimated variance of different state parameters.
         '''
         Q = np.diag([0.04,   # variance of location on x-axis in pxl^2
@@ -70,28 +62,29 @@ class Extended_Kalman_Filter():
 
         Inputs: - speed_l: speed of left motor in mm/s
                 - speed_r: speed of right motor in mm/s
-                - scaling_factor : in pxl/mm
+                - pix_to_mm : in pxl/mm
 
         Output: - u  : The current motor control values.
                        1x2 vector that holds current inputed speed and angular velocity.
         '''
-        v = (1/self.scaling_factor) * (speed_r + speed_l)/2
+        v = (1/self.pix_to_mm) * (speed_r + speed_l)/2
         theta_dot = (speed_r - speed_l)/(self.wheel_distance + 11) 
         u = np.array([v, theta_dot]).T
         return u
 
     def measure_state(self,x):
         '''
-        Function that returns the current measured state values depending on previous system state values
-        and current input motor control vector.
+        Returns the observed system state based on prior state estimates
+        and noise characteristics.
 
-        Inputs: - x : The previous mesurement time's mean system state values.
-                      1x5 vector that holds the current axis coordinates, angle,
-                      velocity and angular velocity estimations/observations.
+        Inputs:
+        previous_state: A 1x5 vector representing the prior estimates of 
+                        position (x, y), orientation (theta), velocity, 
+                        and angular velocity.
 
-        Outputs: - y : The current measured system state values based on observation values
-                       1x5 vector that holds the current axis coordinates, angle,
-                       velocity and angular velocity mesurements.
+        Outputs:
+        A 1x5 vector representing the observed state values derived 
+        from measurements, incorporating noise.
         '''
         C = np.eye(5)
         y = np.dot(C,x) + np.diag(self.R)
@@ -99,15 +92,16 @@ class Extended_Kalman_Filter():
 
     def system_state(self, robot_pose_px):
         '''
-        Function that analyses the data to return the current measurement state vector.
+        Computes the current measurement state vector based on the robot's observed pose.
 
-        Inputs: - Mu : The previous mesurement time's mean system state values.
-                   1x5 vector that holds the current axis coordinates, angle,
-                   velocity and angular velocity estimations.
+        Inputs:
+        robot_pose_px: A tuple containing the robot's position (x, y) and orientation (angle) 
+                       as observed from external measurements.
 
-        Output: - y_current : The current measured system state values based on observation values
-                              1x5 vector that holds the current axis coordinates, angle,
-                              velocity and angular velocity mesurements.
+        Outputs:
+        y_current: A 1x5 vector representing the current measured state, which includes:
+                   position (x, y), orientation (angle), velocity, and angular velocity.
+    
         '''
         if (self.dt == 0):
             self.dt = 1
@@ -123,18 +117,25 @@ class Extended_Kalman_Filter():
 
     def Get_Mu_pred(self, u, Q, delta_t, Mu):
         '''
-        Function that returns the current system state values depending on previous system state values
-        and current input motor control vector.
+        Predicts the next system state based on the previous state and control input.
 
-        Inputs: - Mu : The previous mesurement time's mean system state values.
-                       1x5 vector that holds the current axis coordinates, angle,
-                       velocity and angular velocity estimations.
-                - u  : The current motor control values.
-                       1x2 vector that holds current speed and angular velocity.
+        Args:
+        Mu: A 1x5 vector representing the previous system state, which includes:
+            - x, y: Current position
+            - theta: Orientation angle
+            - velocity (v): Linear velocity
+            - angular velocity (omega): Angular velocity
+        u: A 1x2 vector containing the current motor control inputs:
+            - Linear speed
+            - Angular velocity
+        Q: A diagonal matrix representing the process noise covariance.
+        delta_t: The time step between the previous and current state.
 
-        Outputs: -Mu_pred : The current predicted system state values based on previous values
-                            and current input motor control data.
+        Returns:
+        Mu_pred: A 1x5 vector representing the predicted system state, which includes:
+                 predicted position, orientation, velocity, and angular velocity.
         '''
+        
         theta = Mu[2]
         A = np.eye(5)*np.array([1,1,1,0,0])
         B = np.array([[delta_t*math.cos(theta),0],
@@ -154,7 +155,7 @@ class Extended_Kalman_Filter():
 
         Output: - G : 5x5 Jacobian matrix of thymio state function applied to input values
         '''
-        v = 1/(self.scaling_factor) * v
+        v = 1/(self.pix_to_mm) * v
         G = np.array([[1,0,-self.dt*v*math.sin(theta),self.dt*math.cos(theta),0],
                      [0,1, self.dt*v*math.cos(theta),self.dt*math.sin(theta),0],
                      [0,0,1,0,self.dt],
