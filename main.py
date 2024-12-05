@@ -4,6 +4,7 @@ import time
 import threading
 import os
 import asyncio
+import csv
 
 from src.vision import camera
 import src.path_planning.path_planning as pp
@@ -32,8 +33,14 @@ def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     print("Initializing filter")
     ekf = Extended_Kalman_Filter(pix2mm, cam.get_robot_pose(), time.time())
     print(cam.get_robot_pose())
-    
 
+
+    # Initialize empty lists to store data
+    filename = "robot_position_data.csv"
+    x_positions = []
+    y_positions = []
+    angles = []
+    timestamps = []
     return cam, driver, ekf, checkpoints
 
 def init_map(cam: camera.Camera) -> list:
@@ -67,36 +74,52 @@ def recalculate_checkpoints(cam: camera.Camera, driver: Driving) -> list:
     cam.set_checkpoints(checkpoints)
     return checkpoints
 
-def update_camera_and_kalman(cam: camera.Camera):
+import time
+import csv
+
+# Function to update the camera and Kalman filter, and save data to CSV
+def update_camera_and_kalman(cam: camera.Camera, filename: str = 'robot_position_data.csv'):
     ekf.update_time(time.time())
     global running
-    # global driver
     print("Starting update_camera_and_kalman thread")
-    while running:
-        # Update the camera and perform filtering
-        cam.update(corners=False, obstacles_goal=False, show_all=False)
-        robot_pose_px = cam.get_robot_pose()
 
-        # TODO: To get real speeds
-        # l_speed, r_speed= driver.get_motor_speeds()
-        # dt = time.time()
-        l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds() , time.time()
+    # Open the CSV file in append mode
+    with open(filename, mode='a', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        
+        # Write the header if the file is empty
+        if csvfile.tell() == 0:
+            csv_writer.writerow(['x', 'y', 'angle', 'time'])  # header for the CSV file
 
+        while running:
+            # Update the camera and perform filtering
+            cam.update(corners=False, obstacles_goal=False, show_all=False)
+            robot_pose_px = cam.get_robot_pose()  # Assuming robot_pose_px is in format [x, y, angle]
+            
+            # TODO: To get real speeds
+            l_speed, r_speed, dt = driver.get_l_speeds(), driver.get_r_speeds(), time.time()
 
-        # # print(f"robot speed kalman: {l_speed}\t {r_speed}")
-        # #print("Filtering")
-        robot_pose_kalman = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
-        # #if l_speed == -r_speed:
-        # print("before kalman:", robot_pose_px)
-        # print("after kalman", robot_pose_kalman)
-       
-        # Display the frame and map
-        cam.display_map(pose_estimation=robot_pose_kalman)
-        if DEBUG:
-            frame = cam.get_current_frame()
-            cv2.imshow("Camera", frame)
-        # This function waits fro 1 ms and is necessary for the frame to be displayed
-        cv2.waitKey(1) 
+            # Apply the Kalman filter with the current speeds and pose
+            robot_pose_kalman = ekf.Kalman_main(l_speed, r_speed, dt, robot_pose_px)
+
+            # Unpack the robot pose returned by the Kalman filter
+            robot_pos, robot_angle = robot_pose_kalman  # robot_pose_kalman is a tuple ([x, y], angle)
+
+            # Get the current time
+            current_time = time.time()
+
+            # Write the values to the CSV file (x, y, angle, time)
+            csv_writer.writerow([robot_pos[0], robot_pos[1], robot_angle, current_time])
+
+            # Display the updated robot pose using the camera's map display function
+            cam.display_map(pose_estimation=robot_pose_kalman)
+
+            if DEBUG:
+                frame = cam.get_current_frame()
+                cv2.imshow("Camera", frame)
+
+            # This function waits for 1 ms and is necessary for the frame to be displayed
+            cv2.waitKey(1)
 
 
 def motion_control(driver: Driving, camera: camera.Camera, checkpoints: list, 
