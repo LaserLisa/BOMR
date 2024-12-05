@@ -20,7 +20,7 @@ DEBUG = True          # global variable to enable/disable debug messages
 def init() -> tuple[camera.Camera, Driving, Extended_Kalman_Filter]:
     """Initializes the camera, Thymio and the Extended Kalman Filter"""
     print("Initializing camera...")
-    cam = camera.Camera(1, window_size=2)
+    cam = camera.Camera(0, window_size=2)
     pix2mm = cam.pixel2mm
     print(pix2mm)
 
@@ -46,7 +46,7 @@ def init_map(cam: camera.Camera) -> list:
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
     checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, cam.pixel2mm, 
-                                     plot=True)
+                                     plot=False)
     print(checkpoints)
     cam.set_checkpoints(checkpoints)
     return checkpoints
@@ -63,7 +63,7 @@ def recalculate_checkpoints(cam: camera.Camera, driver: Driving) -> list:
     goal = cam.get_goal_position()
     print("Getting checkpoints...")
     checkpoints = pp.get_checkpoints(map, robot_pose_px[0], goal, cam.pixel2mm, 
-                                     plot=True)
+                                     plot=False)
     cam.set_checkpoints(checkpoints)
     return checkpoints
 

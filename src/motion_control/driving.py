@@ -89,8 +89,6 @@ class Driving:
 
         # Wait for the specified duration
         time.sleep(duration)
-        # timer = threading.Timer(duration, self.stop)
-        # timer.start()
 
         # Stop the motors
         v = {
@@ -116,12 +114,10 @@ class Driving:
         :param right_speed: Speed of the right motor
         """
 
-        # print(f"Setting motor speeds: Left = {left_speed}, Right = {right_speed}")
         v = {
             "motor.left.target": [left_speed],
             "motor.right.target": [right_speed],
         }
-        # TODO: define mapping target speed to speed in mm/s as global variable and justify it
         self.r_speed = right_speed / self.conversion_factor
         self.l_speed = left_speed  / self.conversion_factor
         aw(self.node.set_variables(v))
@@ -138,13 +134,11 @@ class Driving:
         if angle >= 0:
             duration = abs((angle)*scaling_factor)  
             self.execute_command(-speed, speed, duration)
-            # print(f"Turning {angle} rad")
         
 
         elif angle < 0:
             duration = abs((angle)*scaling_factor)
             self.execute_command(speed, -speed, duration)
-            # print(f"Turning {angle} rad")
 
     def move(self, distance):
         """
@@ -172,7 +166,7 @@ class Driving:
 
     def move_to_checkpoint(self, robot_pose: tuple[np.ndarray, float], checkpoint: np.ndarray):
         """
-        Function to move the robot to a given point in the map. P(ID) control on the
+        Function to move the robot to a given point in the map. P control on the
         angle is used to steer the robot towards the checkpoint.
 
         Args:
@@ -200,7 +194,7 @@ class Driving:
             speed = int(30 * np.sign(angle) + angle * 120)
             self.set_motor_speeds(-speed, speed)
         
-        # Otherwise, move forward with a P(ID) control to steer towards the checkpoint
+        # Otherwise, move forward with a P control to steer towards the checkpoint
         else:
             gain = self.pid(angle)
             l_speed = 150 + gain
@@ -223,9 +217,6 @@ class Driving:
 
         # Convert to mm/s using the calibration factor
         return left_speed/3, right_speed/3
-    # except KeyError as e:
-        # print("Error: Unable to fetch motor speeds. Are the motor variables available?{e}")
-        # return None, None
 
 
     
