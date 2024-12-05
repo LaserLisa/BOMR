@@ -24,25 +24,16 @@ class Extended_Kalman_Filter():
         self.R = np.diag([pxl_var,  # variance of location on x-axis in pxl^2
                     pxl_var,   # variance of location on x-axis in pxl^2
                     0,         # variance of yaw angle          in rad^2
-                    6.15,      # variance of velocity           in pxl^2/s^2
+                    5.02,      # variance of velocity           in pxl^2/s^2
                     0])        # variance of angular velocity   in rad^2/s^2(yaw rate)
 
         self.Q = np.diag([0.04,    # variance of location on x-axis in pxl^2
                      0.04,    # variance of location on y-axis in pxl^2
                      0,       # variance of yaw angle          in rad^2
-                     6.15,    # variance of velocity           in pxl^2/s^2
+                     5.02,    # variance of velocity           in pxl^2/s^2
                      0])      # variance of angular velocity   in rad^2/s^2(yaw rate)
         self.orientation_tracker = Orientation(window_size=10)
 
-    def update_orientation(self, new_position):
-        """
-        Updates the orientation based on the new position.
-        
-        Args:
-            new_position (np.ndarray): The new (x, y) position.
-        """
-        self.orientation_tracker.update(new_position)
-   
 
     def update_time(self, time):
         '''
