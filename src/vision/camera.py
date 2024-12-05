@@ -45,6 +45,7 @@ class Camera(cv2.VideoCapture):
 
         Args:
             show (bool): If True shows camera frame while initalization. Default True.
+            show_all (bool): If True shows all intermediate windows. Default: False
         """
         t_start = time.time()
         # let the camera adjust to the light
@@ -99,6 +100,11 @@ class Camera(cv2.VideoCapture):
         """
         Displays the map with obstacles, goal position, robot position from vision
         and estimated robot position from the Kalman filter.
+
+        Args:
+            pose_estimation (tuple): Estimated robot pose from the Kalman filter in the
+                                        format ([x,y], angle). Default: None
+            alpha (float): Weight of the overlayed image. Default: 0.7
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
         map = self._warped.copy()
@@ -120,15 +126,15 @@ class Camera(cv2.VideoCapture):
                             (arrow_end_x, arrow_end_y), color, 2)
         
         def draw_path(checkpoints):
-            # Draw checkpoints (as circles) on the image
             for checkpoint in checkpoints:
-                cv2.circle(overlay, checkpoint, 5, (0, 0, 255), -1)  # Red circles for checkpoints
+                # Red circles for checkpoints
+                cv2.circle(overlay, checkpoint, 5, (0, 0, 255), -1)  
 
-            # Draw lines from checkpoint to checkpoint
             for i in range(len(checkpoints) - 1):
                 start_point = checkpoints[i]
                 end_point = checkpoints[i + 1]
-                cv2.line(overlay, start_point, end_point, (0, 255, 0), 2)  # Green line
+                # Green line
+                cv2.line(overlay, start_point, end_point, (0, 255, 0), 2)  
         
         if self._checkpoints:
             draw_path(self._checkpoints)
@@ -152,7 +158,7 @@ class Camera(cv2.VideoCapture):
         """
         Returns the map with the obstacles if it is initalized. Otherwise raises error.
 
-        The maps contains '1' if there is an obstacle and '0' else.
+        The maps contains '1' if there is an obstacle and '0' otherwise.
         """
         assert self._init_map, "Map not initalized, call cam.initalize_map() first."
         return (cv2.cvtColor(self._map, cv2.COLOR_BGR2GRAY) == 255).astype(int)
@@ -167,7 +173,7 @@ class Camera(cv2.VideoCapture):
         self._checkpoints = None
     
     def get_robot_pose(self) -> tuple:
-        """Returns the robot pose ([x,y],angle)"""
+        """Returns the robot pose as tuple of format ([x,y],angle)"""
         return (self._robot_position.value, self._robot_orientation.value)
     
     def get_goal_position(self) -> list:
@@ -175,31 +181,34 @@ class Camera(cv2.VideoCapture):
         return self._goal_position
     
     def set_checkpoints(self, points):
-        """Sets the list of checkpoints"""
+        """Sets the checkpoints to show on the map
+
+        Args:
+            points (list): List of checkpoints as [x,y] coordinates
+        """
         self._checkpoints = points
 
     def _extract_robot_pose(self, show: bool = False):
         """
         Extracts the robot pose from latest frame
+
         Args:
-            show (bool): If True shows the found aruco marker
+            show (bool): If True shows the found aruco marker. Default: False
         """
         warped = self._warped.copy() 
         if show:
             img = warped.copy()
         gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
 
-        corners, ids, rejected = self._aruco_detector.detectMarkers(gray)
+        corners, ids, _ = self._aruco_detector.detectMarkers(gray)
         if ids is not None:
-            # the 4 corner of our map have ids 1,2,3,4
             for i, id in enumerate(ids):
-                if id == 42:  # only consider corner markers
+                if id == 42:  # only consider 
                     c1 = corners[0][0][0].astype(int)
                     c2 = corners[0][0][1].astype(int)
                     c3 = corners[0][0][2].astype(int)
                     center = np.mean([c1, c3], axis=0)
                     p = np.mean([c1, c2], axis=0)
-                    # angle = np.arctan2((center-p)[1], (p-center)[0])
                     self._robot_orientation.update(center-p)
                     self._robot_position.update(center)
                 if show:
@@ -226,7 +235,7 @@ class Camera(cv2.VideoCapture):
             img = self._frame.copy()
         gray = cv2.cvtColor(self._frame, cv2.COLOR_BGR2GRAY)
 
-        corners, ids, rejected = self._aruco_detector.detectMarkers(gray)
+        corners, ids, _ = self._aruco_detector.detectMarkers(gray)
         if ids is not None:
             # the 4 corner of our map have ids 1,2,3,4
             for i, id in enumerate(ids):
@@ -261,7 +270,7 @@ class Camera(cv2.VideoCapture):
         morph = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, kernel, iterations=2)
         contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-        # filter controus where area < 1000
+        # filter controus by area
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > self._hyperparams.obstacles.area]
         self._obstacles_contours = contours
         map = np.zeros_like(warped, dtype=np.uint8)
